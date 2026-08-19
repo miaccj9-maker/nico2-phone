@@ -1,4 +1,4 @@
-// nico Phone Extension - 聊天窗口内嵌手机组件
+// nico2 Phone Extension - 聊天窗口内嵌手机组件
 // 基于正则规则改造，支持JS交互
 (function(){
     console.log('[NicoPhone] 扩展加载中...');
@@ -172,40 +172,68 @@ phoneEl.setAttribute('data-nico-rendered', 'true');
     startObserver();
 
     // ===== 9. iframe 支持：扫描所有 iframe 内的手机组件 =====
-    function initIframePhones(){
+    // 在指定document中初始化所有未初始化的手机组件
+    function initNicoPhonesInDoc(doc){
+        if(!doc || !doc.body) return 0;
+        var stages = doc.querySelectorAll('.Nico-stage:not([data-nico-rendered])');
+        var count = 0;
+        for(var j=0;j<stages.length;j++){
+            (function(stage){
+                stage.setAttribute('data-nico-rendered','true');
+                count++;
+                setTimeout(function(){
+                    if(window.initNicoPhone){
+                        try{
+                            window.initNicoPhone(stage);
+                            console.log('[NicoPhone] 手机组件已初始化');
+                        }catch(e){
+                            console.error('[NicoPhone] 初始化报错:', e);
+                        }
+                    }
+                }, 150);
+            })(stages[j]);
+        }
+        return count;
+    }
+    // 扫描主document + 所有iframe
+    function scanAllDocs(){
+        var total = 0;
+        try{ total += initNicoPhonesInDoc(document); }catch(e){}
         var iframes = document.querySelectorAll('iframe');
         for(var i=0;i<iframes.length;i++){
             try{
                 var iframeDoc = iframes[i].contentDocument || iframes[i].contentWindow.document;
-                if(!iframeDoc || !iframeDoc.body) continue;
-                var stages = iframeDoc.querySelectorAll('.Nico-stage');
-                for(var j=0;j<stages.length;j++){
-                    (function(stage){
-                        if(stage.getAttribute('data-nico-rendered')) return;
-                        stage.setAttribute('data-nico-rendered', 'true');
-                        setTimeout(function(){
-                            if(window.initNicoPhone){
-                                try{
-                                    window.initNicoPhone(stage);
-                                    console.log('[NicoPhone] iframe内手机组件已初始化');
-                                }catch(e){
-                                    console.error('[NicoPhone] iframe初始化报错:', e);
-                                    console.error('[NicoPhone] 报错堆栈:', e.stack);
-                                }
-                            } else {
-                                console.error('[NicoPhone] initNicoPhone不存在');
-                            }
-                        }, 150);
-                    })(stages[j]);
+                if(iframeDoc && iframeDoc.body){
+                    total += initNicoPhonesInDoc(iframeDoc);
+                    // 监听iframe内部DOM变化
+                    if(!iframes[i]._nicoObserved){
+                        iframes[i]._nicoObserved = true;
+                        try{
+                            var obs = new MutationObserver(function(){ initNicoPhonesInDoc(iframeDoc); });
+                            obs.observe(iframeDoc.body, { childList:true, subtree:true });
+                        }catch(e){}
+                    }
                 }
-            }catch(e){
-                // 跨域iframe访问失败，静默忽略
-            }
+            }catch(e){}
         }
+        return total;
     }
-    // 初始扫描 + 定期轮询（消息可能动态加载）
-    setTimeout(initIframePhones, 800);
-    setInterval(initIframePhones, 1500);
+    // 监听主document DOM变化（动态加载的消息也能捕获）
+    try{
+        var mainObs = new MutationObserver(scanAllDocs);
+        mainObs.observe(document.body, { childList:true, subtree:true });
+    }catch(e){}
+    // 前20秒高频扫描(每秒)，之后低频扫描(每3秒)
+    var scanCount = 0;
+    var fastInterval = setInterval(function(){
+        scanAllDocs();
+        scanCount++;
+        if(scanCount >= 20){
+            clearInterval(fastInterval);
+            setInterval(scanAllDocs, 3000);
+        }
+    }, 1000);
+    setTimeout(scanAllDocs, 300);
 
     console.log('[NicoPhone] 扩展加载完成');
 })();
