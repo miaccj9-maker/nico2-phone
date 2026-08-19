@@ -1,4 +1,4 @@
-// nico2 Phone Extension - 聊天窗口内嵌手机组件
+// nico222 Phone Extension - 聊天窗口内嵌手机组件
 // 基于正则规则改造，支持JS交互
 (function(){
     console.log('[NicoPhone] 扩展加载中...');
