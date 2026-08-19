@@ -1,4 +1,4 @@
-// nico Phone Extension - 聊天窗口内嵌手机组件
+// nico22 Phone Extension - 聊天窗口内嵌手机组件
 // 基于正则规则改造，支持JS交互
 (function(){
     console.log('[NicoPhone] 扩展加载中...');
@@ -43,34 +43,55 @@
     
     // ===== 6. 处理文本节点里的<phone>标签 =====
     function processTextNode(node){
-        var text = node.nodeValue;
-        if(!text || text.indexOf('<phone>') === -1 && text.indexOf('&lt;phone&gt;') === -1) return;
-        
-        // 处理转义版本
-        var normalized = text.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
-        var match = normalized.match(PHONE_REGEX);
-        if(!match) return;
-        
-        var args = [];
-        for(var i=1;i<=15;i++){
-            args.push(match[i] || '');
-        }
-        
-        var html = fillTemplate(args);
-        var div = document.createElement('div');
-        div.innerHTML = html;
-        var phoneEl = div.firstElementChild || div.querySelector('.Nico-stage');
-        
-        if(phoneEl && phoneEl.setAttribute && node.parentNode){
-            node.parentNode.replaceChild(phoneEl, node);
-phoneEl.setAttribute('data-nico-rendered', 'true');
-            // 初始化组件
-            setTimeout(function(){
-                if(window.initNicoPhone){
-                    window.initNicoPhone(phoneEl);
-                    console.log('[NicoPhone] 手机组件已初始化');
+        try{
+            var text = node.nodeValue;
+            if(!text) return;
+            if(text.indexOf('<phone>') === -1 && text.indexOf('&lt;phone') === -1) return;
+            
+            var normalized = text.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
+            var match = normalized.match(PHONE_REGEX);
+            if(!match){
+                // 文本节点可能被拆分，尝试在父元素的完整 innerHTML 中匹配
+                if(node.parentNode && node.parentNode.innerHTML){
+                    var pNorm = node.parentNode.innerHTML.replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&amp;/g,'&');
+                    var pMatch = pNorm.match(PHONE_REGEX);
+                    if(pMatch && node.parentNode.parentNode){
+                        var pArgs = [];
+                        for(var pi=1;pi<=16;pi++){ pArgs.push(pMatch[pi]||''); }
+                        var pDiv = document.createElement('div');
+                        pDiv.innerHTML = fillTemplate(pArgs);
+                        var pPhone = pDiv.firstElementChild || pDiv.querySelector('.Nico-stage');
+                        if(pPhone){
+                            node.parentNode.parentNode.replaceChild(pPhone, node.parentNode);
+                            pPhone.setAttribute('data-nico-rendered','true');
+                            setTimeout(function(){ if(window.initNicoPhone){try{window.initNicoPhone(pPhone);}catch(e){}} },50);
+                        }
+                    }
                 }
-            }, 50);
+                return;
+            }
+            
+            var args = [];
+            for(var i=1;i<=16;i++){
+                args.push(match[i] || '');
+            }
+            
+            var html = fillTemplate(args);
+            var div = document.createElement('div');
+            div.innerHTML = html;
+            var phoneEl = div.firstElementChild || div.querySelector('.Nico-stage');
+            
+            if(phoneEl && phoneEl.setAttribute && node.parentNode){
+                node.parentNode.replaceChild(phoneEl, node);
+                phoneEl.setAttribute('data-nico-rendered', 'true');
+                setTimeout(function(){
+                    if(window.initNicoPhone){
+                        try{ window.initNicoPhone(phoneEl); }catch(e){ console.error('[NicoPhone] init失败:', e); }
+                    }
+                }, 50);
+            }
+        }catch(e){
+            console.error('[NicoPhone] processTextNode错误:', e);
         }
     }
     
@@ -221,30 +242,37 @@ phoneEl.setAttribute('data-nico-rendered', 'true');
             var nodesToProcess = [];
             var node;
             while(node = walker.nextNode()){
-                if(node.nodeValue && (node.nodeValue.indexOf('<phone>') >= 0 || node.nodeValue.indexOf('&lt;phone&gt;') >= 0)){
+                if(node.nodeValue && (node.nodeValue.indexOf('<phone>') >= 0 || node.nodeValue.indexOf('&lt;phone') >= 0)){
                     nodesToProcess.push(node);
                 }
             }
             nodesToProcess.forEach(function(n){ processTextNode(n); });
             
-            // 方法2：检查所有元素的 innerHTML 中是否有转义的 phone（文本节点可能被拆分）
-            if(nodesToProcess.length === 0){
-                var allEls = doc.querySelectorAll('*');
-                for(var i=0;i<allEls.length;i++){
-                    var el = allEls[i];
-                    // 只检查叶子元素（没有子元素或只有文本）
-                    if(el.children.length === 0 && el.innerHTML && el.innerHTML.indexOf('&lt;phone&gt;') >= 0){
-                        // 创建一个临时文本节点来处理
-                        var tempText = el.innerHTML;
-                        var normalized = tempText.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
-                        if(normalized.indexOf('<phone>') >= 0){
-                            // 直接替换元素内容
-                            var tempDiv = document.createElement('div');
-                            tempDiv.innerHTML = el.innerHTML;
-                            var textNode = document.createTextNode(tempDiv.textContent || normalized);
-                            processTextNode(textNode);
-                            if(textNode.parentNode){
-                                el.parentNode.replaceChild(textNode.parentNode.firstChild || textNode, el);
+            // 方法2：检查叶子元素的 innerHTML（处理转义标签被拆分的情况）
+            var allEls = doc.querySelectorAll('*');
+            for(var i=0;i<allEls.length;i++){
+                var el = allEls[i];
+                if(el.children.length === 0 && el.innerHTML && el.innerHTML.indexOf('phone') >= 0){
+                    var inner = el.innerHTML;
+                    if(inner.indexOf('&lt;phone') >= 0 || inner.indexOf('<phone>') >= 0){
+                        if(el.getAttribute('data-nico-rendered')) continue;
+                        var normalized = inner.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
+                        var match = normalized.match(PHONE_REGEX);
+                        if(match){
+                            var args = [];
+                            for(var j=1;j<=16;j++){ args.push(match[j] || ''); }
+                            var html = fillTemplate(args);
+                            var div = document.createElement('div');
+                            div.innerHTML = html;
+                            var phoneEl = div.firstElementChild || div.querySelector('.Nico-stage');
+                            if(phoneEl && el.parentNode){
+                                el.parentNode.replaceChild(phoneEl, el);
+                                phoneEl.setAttribute('data-nico-rendered', 'true');
+                                (function(p){
+                                    setTimeout(function(){
+                                        if(window.initNicoPhone){ try{ window.initNicoPhone(p); }catch(e){} }
+                                    }, 50);
+                                })(phoneEl);
                             }
                         }
                     }
