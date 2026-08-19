@@ -1,23 +1,7 @@
-// nico22 Phone Extension - 聊天窗口内嵌手机组件
+// nico2 Phone Extension - 聊天窗口内嵌手机组件
 // 基于正则规则改造，支持JS交互
 (function(){
     console.log('[NicoPhone] 扩展加载中...');
-    
-    // ===== 临时调试：手机端加载 vConsole =====
-    if(/Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) && window.innerWidth < 900){
-        try{
-            var vcScript = document.createElement('script');
-            vcScript.src = 'https://unpkg.com/vconsole@latest/dist/vconsole.min.js';
-            vcScript.onload = function(){
-                window.vConsole = new window.VConsole();
-                console.log('[NicoPhone] vConsole 已加载 - 手机端调试面板');
-            };
-            vcScript.onerror = function(){
-                console.log('[NicoPhone] vConsole 加载失败（网络问题）');
-            };
-            document.head.appendChild(vcScript);
-        }catch(e){ console.error('[NicoPhone] vConsole初始化失败:', e); }
-    }
     
     // ===== 1. 注入CSS（只注入一次）=====
     if(!document.getElementById('nico-phone-css')){
@@ -45,7 +29,7 @@
     var HTML_TEMPLATE = "\n\n<div class=\"Nico-stage Nico-root\"><div class=\"Nico-phone-wrap\" id=\"Nc-Phone-Wrapper\"><div class=\"Nico-phone\"><div class=\"Nico-home-screen Nico-jhome\"><div class=\"Nico-ios-statusbar\"><div class=\"Nico-jhome-time\">12:00</div><div class=\"Nico-ios-statusbar-right\"><svg viewBox=\"0 0 24 24\"><path d=\"M12 20h2V10h-2v10zm-4 0h2v-6H8v6zm8-14v14h2V6h-2zM4 20h2v-3H4v3z\"/></svg><svg viewBox=\"0 0 24 24\"><path d=\"M12 3c-4.8 0-9.1 1.9-12.3 5l1.4 1.4C4.1 6.5 7.9 4.8 12 4.8s7.9 1.7 10.9 4.6l1.4-1.4C21.1 4.9 16.8 3 12 3zm0 5.5c-3.2 0-6.2 1.2-8.5 3.3l1.4 1.4c1.9-1.7 4.4-2.7 7.1-2.7s5.2 1 7.1 2.7l1.4-1.4C18.2 9.7 15.2 8.5 12 8.5zm0 5c-1.6 0-3.1.6-4.2 1.6l1.4 1.4c.8-.7 1.8-1 2.8-1s2 .3 2.8 1l1.4-1.4c-1.1-1-2.6-1.6-4.2-1.6zm0 4.5c-.8 0-1.5.7-1.5 1.5S11.2 21 12 21s1.5-.7 1.5-1.5S12.8 18 12 18z\"/></svg><div class=\"Nico-ios-battery\"><div class=\"Nico-ios-battery-level\"></div></div></div></div><div class=\"Nico-sticky-note\"><div class=\"Nico-sticky-tape\"></div><textarea class=\"Nico-sticky-textarea Nico-jsticky-txt\" placeholder=\"\u5728\u8fd9\u91cc\u5199\u4e0b\u4fbf\u7b7e...\"></textarea><button class=\"Nico-sticky-btn Nico-jsticky-save\">\u4fdd\u5b58\u66f4\u65b0</button></div><div class=\"Nico-dock\"><div class=\"Nico-dock-icon\" id=\"app-wechat\"><svg viewBox=\"0 0 24 24\"><path d=\"M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z\"></path></svg></div><div class=\"Nico-dock-icon\" id=\"app-phone\"><svg viewBox=\"0 0 24 24\"><path d=\"M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z\"/></svg></div></div></div><div class=\"Nico-sys-app Nico-japp-panel\"><div class=\"Nico-sys-app-hd\"><div class=\"Nico-japp-back\" style=\"cursor:pointer;\"><svg width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"#222\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><polyline points=\"15 18 9 12 15 6\"></polyline></svg></div><span class=\"Nico-japp-title\" style=\"flex:1; text-align:center; padding-right:24px;\">\u7535\u8bdd</span></div><div class=\"Nico-sys-app-body Nico-japp-body\"><div class=\"Nico-phone-app-container\"><div class=\"Nico-phone-content\" id=\"phone-content\"></div><div class=\"Nico-phone-tabbar\"><div class=\"Nico-ptab active\" data-target=\"recents\"><svg viewBox=\"0 0 24 24\"><circle cx=\"12\" cy=\"12\" r=\"10\"></circle><polyline points=\"12 6 12 12 16 14\"></polyline></svg>\u6700\u8fd1\u901a\u8bdd</div><div class=\"Nico-ptab\" data-target=\"contacts\"><svg viewBox=\"0 0 24 24\"><path d=\"M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2\"></path><circle cx=\"9\" cy=\"7\" r=\"4\"></circle><path d=\"M23 21v-2a4 4 0 0 0-3-3.87\"></path><path d=\"M16 3.13a4 4 0 0 1 0 7.75\"></path></svg>\u8054\u7cfb\u4eba</div><div class=\"Nico-ptab\" data-target=\"dialpad\"><svg viewBox=\"0 0 24 24\"><circle cx=\"6\" cy=\"6\" r=\"2\"></circle><circle cx=\"12\" cy=\"6\" r=\"2\"></circle><circle cx=\"18\" cy=\"6\" r=\"2\"></circle><circle cx=\"6\" cy=\"12\" r=\"2\"></circle><circle cx=\"12\" cy=\"12\" r=\"2\"></circle><circle cx=\"18\" cy=\"12\" r=\"2\"></circle><circle cx=\"6\" cy=\"18\" r=\"2\"></circle><circle cx=\"12\" cy=\"18\" r=\"2\"></circle><circle cx=\"18\" cy=\"18\" r=\"2\"></circle></svg>\u62e8\u53f7\u952e\u76d8</div></div></div></div></div><div class=\"Nico-content-layer Nico-root\"><div class=\"Nico-bg Nico-jbg\"></div><div class=\"Nico-call Nico-jcall state-out\"><div class=\"Nico-call-mini-hint\"></div><div class=\"Nico-call-vbg Nico-bind-lav-bg\"></div><div class=\"Nico-call-pip Nico-bind-rav-bg\"></div><div class=\"Nico-call-mini-top Nico-jcall-mini-top\"><svg viewBox=\"0 0 24 24\"><path d=\"M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3\"/></svg></div><div class=\"Nico-call-ct\"><div class=\"Nico-call-avs\"><div class=\"Nico-call-av Nico-jcall-lav Nico-bind-lav\"></div><div class=\"Nico-call-av Nico-jcall-rav Nico-bind-rav\"></div></div><div class=\"Nico-call-nm Nico-jcall-nm Nico-bind-lnm\"></div><div class=\"Nico-call-timer Nico-jcall-timer\">00:00</div><div class=\"Nico-call-st Nico-jcall-st\">\u6b63\u5728\u547c\u53eb...</div><div class=\"Nico-call-bubs Nico-jcall-bubs\"></div><div class=\"Nico-call-ft\"><div class=\"Nico-call-btns btns-in\"><div class=\"Nico-call-btn hangup Nico-jcall-reject\"><svg viewBox=\"0 0 24 24\"><path d=\"M10.5 4.5l-2-2a2 2 0 0 0-2.83 0l-2 2a2 2 0 0 0 0 2.83l9 9a2 2 0 0 0 2.83 0l2-2a2 2 0 0 0 0-2.83z\"/><path d=\"M14 8h5v5\"/><path d=\"M19 8l-5 5\"/></svg></div><div class=\"Nico-call-btn answer Nico-jcall-answer\"><svg viewBox=\"0 0 24 24\"><path d=\"M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z\"/></svg></div></div><div class=\"Nico-call-btns btns-out\"><div class=\"Nico-call-btn cancel Nico-jcall-cancel\"><svg viewBox=\"0 0 24 24\"><path d=\"M10.5 4.5l-2-2a2 2 0 0 0-2.83 0l-2 2a2 2 0 0 0 0 2.83l9 9a2 2 0 0 0 2.83 0l2-2a2 2 0 0 0 0-2.83z\"/><path d=\"M14 8h5v5\"/><path d=\"M19 8l-5 5\"/></svg></div></div><div class=\"Nico-call-inrow\"><div class=\"Nico-call-btn hangup mini Nico-jcall-end\" title=\"\u6302\u65ad\"><svg viewBox=\"0 0 24 24\"><path d=\"M10.5 4.5l-2-2a2 2 0 0 0-2.83 0l-2 2a2 2 0 0 0 0 2.83l9 9a2 2 0 0 0 2.83 0l2-2a2 2 0 0 0 0-2.83z\"/><path d=\"M14 8h5v5\"/><path d=\"M19 8l-5 5\"/></svg></div><input type=\"text\" class=\"Nico-call-in Nico-jcall-in\" placeholder=\"\u53d1\u9001\u5b9e\u65f6\u6d88\u606f...\"><button class=\"Nico-call-send Nico-jcall-send\">\u53d1\u9001</button></div></div></div></div><div class=\"Nico-hd Nico-jhd\"><div class=\"Nico-notch\"></div><div class=\"Nico-hd-back Nico-jhd-back\" title=\"\u8fd4\u56de\u4e3b\u754c\u9762\"><svg viewBox=\"0 0 24 24\"><polyline points=\"15 18 9 12 15 6\"></polyline></svg></div><div class=\"Nico-hd-ph\" style=\"display:none;\"></div><div class=\"Nico-hd-mid\"><div class=\"Nico-ubox Nico-jpat-l\"><div class=\"Nico-uav Nico-bind-lav\" title=\"\u70b9\u51fb\u4fee\u6539\u62cd\u4e00\u62cd\"></div><div class=\"Nico-uname Nico-bind-lnm\" title=\"\u70b9\u51fb\u4fee\u6539\u5bf9\u65b9\u5907\u6ce8\"></div></div><div class=\"Nico-waves\"><span class=\"Nico-wave\"></span><span class=\"Nico-wave\"></span><span class=\"Nico-wave\"></span><span class=\"Nico-wave\"></span><span class=\"Nico-wave\"></span><span class=\"Nico-wave\"></span></div><div class=\"Nico-ubox Nico-jpat-r\"><div class=\"Nico-uav Nico-bind-rav\" title=\"\u70b9\u51fb\u4fee\u6539\u62cd\u4e00\u62cd\"></div><div class=\"Nico-uname Nico-bind-rnm\" title=\"\u70b9\u51fb\u4fee\u6539\u81ea\u5df1\u5907\u6ce8\"></div></div></div><div class=\"Nico-icons-rt\"><div class=\"Nico-icbtn pyq Nico-jpyqbtn\" title=\"\u670b\u53cb\u5708\"><svg viewBox=\"0 0 24 24\"><polygon points=\"12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2\"/></svg></div><div class=\"Nico-icbtn Nico-jset-open\" title=\"\u8bbe\u7f6e\"><svg viewBox=\"0 0 24 24\"><circle cx=\"12\" cy=\"5\" r=\"2.5\"/><circle cx=\"12\" cy=\"12\" r=\"2.5\"/><circle cx=\"12\" cy=\"19\" r=\"2.5\"/></svg></div></div><div class=\"Nico-hd-pull Nico-jhd-toggle\"><svg viewBox=\"0 0 24 24\" width=\"16\" height=\"16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><polyline points=\"6 9 12 15 18 9\"></polyline></svg></div></div><div class=\"Nico-chat Nico-jchat\"></div><div class=\"Nico-pyq-panel Nico-jpyqpanel\"><div class=\"Nico-pyq-hd\"><div class=\"Nico-pyq-back Nico-jpyqback\" title=\"\u8fd4\u56de\"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\"><polyline points=\"15 18 9 12 15 6\"></polyline></svg></div><div class=\"Nico-pyq-addbtn Nico-jpyqadd\"><svg viewBox=\"0 0 24 24\"><line x1=\"12\" y1=\"5\" x2=\"12\" y2=\"19\"></line><line x1=\"5\" y1=\"12\" x2=\"19\" y2=\"12\"></line></svg></div></div><div class=\"Nico-pyq-scroll\"><div class=\"Nico-pyq-cover Nico-jpyq-cover\" title=\"\u70b9\u51fb\u66f4\u6362\u80cc\u666f\"><div class=\"Nico-pyq-user\"><div class=\"Nico-pyq-uname Nico-bind-rnm\"></div><div class=\"Nico-pyq-uav Nico-jpyq-uav\" title=\"\u70b9\u51fb\u66f4\u6362\u5934\u50cf\"></div></div></div><div class=\"Nico-pyq-list Nico-jpyqlist\"></div></div></div><div class=\"Nico-txt-zoom Nico-jtxtzoom\"><div class=\"Nico-txt-zoom-in Nico-jtxtzoomin\"></div></div><div class=\"Nico-set Nico-jset\"><div class=\"Nico-set-h\">\u89c6\u89c9\u63a7\u5236\u53f0<span class=\"Nico-set-x Nico-jset-close\">&times;</span></div><div class=\"Nico-set-r\"><label>\u5de6\u4fa7\u540d\u79f0</label><div class=\"Nico-color-wrap\"><input type=\"text\" class=\"Nico-hex-in Nico-jset-lnm\" placeholder=\"\u8f93\u5165\u540d\u79f0\" style=\"width:100px;\"></div></div><div class=\"Nico-set-r\"><label>\u53f3\u4fa7\u540d\u79f0</label><div class=\"Nico-color-wrap\"><input type=\"text\" class=\"Nico-hex-in Nico-jset-rnm\" placeholder=\"\u8f93\u5165\u540d\u79f0\" style=\"width:100px;\"></div></div><div class=\"Nico-set-r\"><label>\u62c9\u9ed1\u62e6\u622a\u63a7\u5236</label><div class=\"Nico-color-wrap\"><button class=\"Nico-bg-btn Nico-jblk-l\" title=\"\u53f3\u4fa7\u62c9\u9ed1\u5de6\u4fa7\uff0c\u5de6\u4fa7\u53d1\u51fa\u7684\u6d88\u606f\u5e26\u53f9\u53f7\">\u53f3\u4fa7\u62c9\u9ed1\u5de6\u4fa7</button><button class=\"Nico-bg-btn Nico-jblk-r\" title=\"\u5de6\u4fa7\u62c9\u9ed1\u53f3\u4fa7\uff0c\u53f3\u4fa7\u53d1\u51fa\u7684\u6d88\u606f\u5e26\u53f9\u53f7\">\u5de6\u4fa7\u62c9\u9ed1\u53f3\u4fa7</button></div></div><div class=\"Nico-set-r\"><label>\u4e3b\u9875/\u804a\u5929\u80cc\u666f</label><div class=\"Nico-color-wrap\"><button class=\"Nico-bg-btn Nico-jbg-upload\">\u4e0a\u4f20/\u66f4\u6362</button><button class=\"Nico-bg-btn Nico-jbg-clear\">\u6062\u590d\u9ed8\u8ba4</button></div></div><div class=\"Nico-set-r\"><label>\u5934\u50cf\u5f62\u72b6</label><div class=\"Nico-color-wrap\"><button class=\"Nico-bg-btn Nico-jav-rnd active\">\u5706\u5f62</button><button class=\"Nico-bg-btn Nico-jav-sq\">\u65b9\u5f62</button></div></div><div class=\"Nico-set-r\"><label>\u8d28\u611f\u98ce\u683c</label><div class=\"Nico-color-wrap\"><button class=\"Nico-bg-btn Nico-jglass-glass active\">\u6bdb\u73bb\u7483</button><button class=\"Nico-bg-btn Nico-jglass-solid\">\u7eaf\u5b9e\u8272</button></div></div><div class=\"Nico-set-r\"><label>\u624b\u673a\u5916\u58f3</label><div class=\"Nico-color-wrap\"><input type=\"text\" id=\"Nc-wrap-txt\" class=\"Nico-hex-in\"><input type=\"color\" id=\"Nc-wrap\"></div></div><div class=\"Nico-set-r\"><label>\u9876\u90e8\u680f\u80cc\u666f</label><div class=\"Nico-color-wrap\"><input type=\"text\" id=\"Nc-hdr-txt\" class=\"Nico-hex-in\"><input type=\"color\" id=\"Nc-hdr\"></div></div><div class=\"Nico-set-r\"><label>\u9876\u90e8\u4e0b\u62c9\u952e</label><div class=\"Nico-color-wrap\"><input type=\"text\" id=\"Nc-pull-txt\" class=\"Nico-hex-in\"><input type=\"color\" id=\"Nc-pull\"></div></div><div class=\"Nico-set-r\"><label>\u6ce2\u6d6a\u547c\u5438\u6761</label><div class=\"Nico-color-wrap\"><input type=\"text\" id=\"Nc-wv-txt\" class=\"Nico-hex-in\"><input type=\"color\" id=\"Nc-wv\"></div></div><div class=\"Nico-set-r\"><label>\u4ea4\u4e92\u5361\u7247\u5e95\u8272</label><div class=\"Nico-color-wrap\"><input type=\"text\" id=\"Nc-card-txt\" class=\"Nico-hex-in\"><input type=\"color\" id=\"Nc-card\"></div></div><div class=\"Nico-set-r\"><label>\u5e95\u90e8\u8f93\u5165\u533a</label><div class=\"Nico-color-wrap\"><input type=\"text\" id=\"Nc-ftr-txt\" class=\"Nico-hex-in\"><input type=\"color\" id=\"Nc-ftr\"></div></div><div class=\"Nico-set-r\"><label>\u6211\u65b9\u6c14\u6ce1</label><div class=\"Nico-color-wrap\"><input type=\"text\" id=\"Nc-bub-txt\" class=\"Nico-hex-in\"><input type=\"color\" id=\"Nc-bub\"></div></div><div class=\"Nico-set-r\"><label>\u5bf9\u65b9\u6c14\u6ce1</label><div class=\"Nico-color-wrap\"><input type=\"text\" id=\"Nc-bubl-txt\" class=\"Nico-hex-in\"><input type=\"color\" id=\"Nc-bubl\"></div></div><div class=\"Nico-set-r\"><label>\u6c14\u6ce1\u6587\u5b57</label><div class=\"Nico-color-wrap\"><input type=\"text\" id=\"Nc-tm-txt\" class=\"Nico-hex-in\"><input type=\"color\" id=\"Nc-tm\"></div></div><div class=\"Nico-set-r\"><label>\u5de6\u4fa7\u6c14\u6ce1\u5b57</label><div class=\"Nico-color-wrap\"><input type=\"text\" id=\"Nc-tml-txt\" class=\"Nico-hex-in\"><input type=\"color\" id=\"Nc-tml\"></div></div><div class=\"Nico-set-r\"><label>\u4ea4\u4e92\u5361\u7247\u5b57</label><div class=\"Nico-color-wrap\"><input type=\"text\" id=\"Nc-cdt-txt\" class=\"Nico-hex-in\"><input type=\"color\" id=\"Nc-cdt\"></div></div><div class=\"Nico-set-r\"><label>\u4ea4\u4e92\u5361\u7247\u56fe\u6807</label><div class=\"Nico-color-wrap\"><input type=\"text\" id=\"Nc-cic-txt\" class=\"Nico-hex-in\"><input type=\"color\" id=\"Nc-cic\"></div></div><div class=\"Nico-set-r\"><label>\u9876\u90e8\u680f\u6587\u5b57</label><div class=\"Nico-color-wrap\"><input type=\"text\" id=\"Nc-hdt-txt\" class=\"Nico-hex-in\"><input type=\"color\" id=\"Nc-hdt\"></div></div><div class=\"Nico-set-r\"><label>\u9876\u90e8\u680f\u56fe\u6807</label><div class=\"Nico-color-wrap\"><input type=\"text\" id=\"Nc-hdi-txt\" class=\"Nico-hex-in\"><input type=\"color\" id=\"Nc-hdi\"></div></div><div class=\"Nico-set-r\"><label>\u7cfb\u7edf\u63d0\u793a\u5b57</label><div class=\"Nico-color-wrap\"><input type=\"text\" id=\"Nc-sys-txt\" class=\"Nico-hex-in\"><input type=\"color\" id=\"Nc-sys\"></div></div><div class=\"Nico-set-r\"><label>\u901a\u8bdd\u5de6\u6c14\u6ce1</label><div class=\"Nico-color-wrap\"><input type=\"text\" id=\"Nc-cbubl-txt\" class=\"Nico-hex-in\"><input type=\"color\" id=\"Nc-cbubl\"></div></div><div class=\"Nico-set-r\"><label>\u901a\u8bdd\u53f3\u6c14\u6ce1</label><div class=\"Nico-color-wrap\"><input type=\"text\" id=\"Nc-cbub-txt\" class=\"Nico-hex-in\"><input type=\"color\" id=\"Nc-cbub\"></div></div><div class=\"Nico-set-r\"><label>\u901a\u8bdd\u6c14\u6ce1\u5b57</label><div class=\"Nico-color-wrap\"><input type=\"text\" id=\"Nc-cbtxt-txt\" class=\"Nico-hex-in\"><input type=\"color\" id=\"Nc-cbtxt\"></div></div></div><div class=\"Nico-ft\"><div class=\"Nico-reply-bar Nico-jrepbar\"><span class=\"Nico-reply-txt Nico-jreptxt\"></span><div class=\"Nico-reply-close Nico-jrepclose\">\u00d7</div></div><div class=\"Nico-in-area\"><div class=\"Nico-lang Nico-jlang\">CN</div><div class=\"Nico-plus Nico-jplus\"><svg viewBox=\"0 0 24 24\"><line x1=\"12\" y1=\"5\" x2=\"12\" y2=\"19\"></line><line x1=\"5\" y1=\"12\" x2=\"19\" y2=\"12\"></line></svg></div><input type=\"text\" class=\"Nico-input Nico-jinput\" placeholder=\"\u8f93\u5165\u6587\u5b57\u53d1\u9001...\"><div class=\"Nico-mic Nico-jmic\"><svg viewBox=\"0 0 24 24\"><path d=\"M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z\"></path><path d=\"M19 10v2a7 7 0 0 1-14 0v-2\"></path><line x1=\"12\" y1=\"19\" x2=\"12\" y2=\"22\"></line></svg></div><div class=\"Nico-send Nico-jsend\"><svg viewBox=\"0 0 24 24\"><line x1=\"22\" y1=\"2\" x2=\"11\" y2=\"13\"></line><polygon points=\"22 2 15 22 11 13 2 9 22 2\"></polygon></svg></div></div><div class=\"Nico-panel Nico-jpanel\"><div class=\"Nico-pi Nico-jbtn-voice\"><div class=\"Nico-pic\"><svg viewBox=\"0 0 24 24\"><path d=\"M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z\"/></svg></div><div class=\"Nico-ptx\">\u8bed\u97f3\u547c\u53eb</div></div><div class=\"Nico-pi Nico-jbtn-video\"><div class=\"Nico-pic\"><svg viewBox=\"0 0 24 24\"><polygon points=\"23 7 16 12 23 17 23 7\"/><rect x=\"1\" y=\"5\" width=\"15\" height=\"14\" rx=\"2\" ry=\"2\"/></svg></div><div class=\"Nico-ptx\">\u89c6\u9891\u547c\u53eb</div></div><div class=\"Nico-pi Nico-jimgbtn\"><div class=\"Nico-pic\"><svg viewBox=\"0 0 24 24\"><rect x=\"3\" y=\"3\" width=\"18\" height=\"18\" rx=\"2\"></rect><circle cx=\"8.5\" cy=\"8.5\" r=\"1.5\"></circle><polyline points=\"21 15 16 10 5 21\"></polyline></svg></div><div class=\"Nico-ptx\">\u53d1\u539f\u56fe</div></div><div class=\"Nico-pi Nico-jtxtimg\"><div class=\"Nico-pic\"><svg viewBox=\"0 0 24 24\"><rect x=\"3\" y=\"3\" width=\"18\" height=\"18\" rx=\"2\"/><path d=\"M7 8h10M7 12h10M7 16h6\"/></svg></div><div class=\"Nico-ptx\">\u53d1\u6587\u5b57\u56fe</div></div><div class=\"Nico-pi Nico-jgiftbtn\"><div class=\"Nico-pic\"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.2\"><polyline points=\"20 12 20 22 4 22 4 12\"></polyline><rect x=\"2\" y=\"7\" width=\"20\" height=\"5\"></rect><line x1=\"12\" y1=\"22\" x2=\"12\" y2=\"7\"></line><path d=\"M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z\"></path><path d=\"M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z\"></path></svg></div><div class=\"Nico-ptx\">\u9001\u793c\u7269</div></div><div class=\"Nico-pi Nico-jlinkbtn\"><div class=\"Nico-pic\"><svg viewBox=\"0 0 24 24\"><path d=\"M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71\"/><path d=\"M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71\"/></svg></div><div class=\"Nico-ptx\">\u53d1\u94fe\u63a5</div></div><div class=\"Nico-pi Nico-jtf\"><div class=\"Nico-pic\"><svg viewBox=\"0 0 24 24\" class=\"fl\"><path d=\"M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z\"/></svg></div><div class=\"Nico-ptx\">\u8f6c\u8d26</div></div><div class=\"Nico-pi Nico-jemo\"><div class=\"Nico-pic\"><svg viewBox=\"0 0 24 24\"><circle cx=\"12\" cy=\"12\" r=\"10\"/><path d=\"M8 14s1.5 2 4 2 4-2 4-2\"/><line x1=\"9\" y1=\"9\" x2=\"9.01\" y2=\"9\"/><line x1=\"15\" y1=\"9\" x2=\"15.01\" y2=\"9\"/></svg></div><div class=\"Nico-ptx\">\u8868\u60c5\u5305</div></div><div class=\"Nico-pi Nico-jmusic\"><div class=\"Nico-pic\"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M3 18v-6a9 9 0 0 1 18 0v6\"></path><path d=\"M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z\"></path></svg></div><div class=\"Nico-ptx\">\u4e00\u8d77\u542c\u6b4c</div></div><div class=\"Nico-pi Nico-jcp\"><div class=\"Nico-pic\"><svg viewBox=\"0 0 24 24\"><path d=\"M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z\"/></svg></div><div class=\"Nico-ptx\">\u60c5\u4fa3\u7a7a\u95f4</div></div><div class=\"Nico-pi Nico-jbtn-loc\"><div class=\"Nico-pic\"><svg viewBox=\"0 0 24 24\"><path d=\"M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z\"></path><circle cx=\"12\" cy=\"10\" r=\"3\"></circle></svg></div><div class=\"Nico-ptx\">\u5171\u4eab\u4f4d\u7f6e</div></div><div class=\"Nico-pi Nico-jbtn-food\"><div class=\"Nico-pic\"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.2\"><path d=\"M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z\"></path><polyline points=\"9 22 9 12 15 12 15 22\"></polyline></svg></div><div class=\"Nico-ptx\">\u70b9\u5916\u5356</div></div><div class=\"Nico-pi Nico-jbtn-draw\"><div class=\"Nico-pic\"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.2\"><path d=\"M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z\"></path></svg></div><div class=\"Nico-ptx\">\u624b\u7ed8\u4fbf\u7b7e</div></div></div></div><div class=\"Nico-mf Nico-jmsgact\"><div class=\"Nico-mbox\" style=\"height:auto; padding-bottom:24px;\"><div class=\"Nico-act-btn Nico-jact-reply\">\u5f15\u7528\u56de\u590d</div><div class=\"Nico-act-btn Nico-jact-revoke\" style=\"display:none; color:#222;\">\u64a4\u56de\u6d88\u606f</div><div class=\"Nico-act-space\"></div><div class=\"Nico-act-btn Nico-jact-cancel\" style=\"color:#888;\">\u53d6\u6d88</div></div></div><div class=\"Nico-cen Nico-jaddfriendmodal w260\"><div class=\"Nico-cen-box\"><h4>\u91cd\u65b0\u6dfb\u52a0\u597d\u53cb</h4><input type=\"text\" class=\"Nico-cen-inp Nico-jaddgreet\" placeholder=\"\u6253\u4e2a\u62db\u547c\u5427...\"><div class=\"Nico-cen-btns\"><button class=\"cc Nico-jaddfcancel\">\u53d6\u6d88</button><button class=\"ok Nico-jaddfok\">\u53d1\u9001\u7533\u8bf7</button></div></div></div><div class=\"Nico-cen Nico-jtfactmodal w260\"><div class=\"Nico-cen-box\"><h4>\u8f6c\u8d26\u5904\u7406</h4><div style=\"font-size:13px;color:#888;text-align:center;font-weight:300;\">\u8bf7\u9009\u62e9\u5bf9\u8be5\u7b14\u8f6c\u8d26\u7684\u64cd\u4f5c</div><div class=\"Nico-cen-btns\"><button class=\"cc Nico-jtfact-return\">\u9000\u56de</button><button class=\"ok Nico-jtfact-receive\">\u6536\u6b3e</button></div><div class=\"Nico-cen-btns\" style=\"margin-top:-6px;\"><button class=\"cc Nico-jtfact-cancel\" style=\"width:100%;\">\u53d6\u6d88</button></div></div></div><div class=\"Nico-cen Nico-jlocinputmodal w260\"><div class=\"Nico-cen-box\"><h4>\u53d1\u9001\u4f4d\u7f6e\u5206\u4eab</h4><input type=\"text\" class=\"Nico-cen-inp Nico-jlocin-pos\" placeholder=\"\u6211\u7684\u4f4d\u7f6e (\u5982:\u671d\u9633\u533a)\"><input type=\"text\" class=\"Nico-cen-inp Nico-jlocin-dist\" placeholder=\"\u76f8\u8ddd\u8ddd\u79bb (\u5982:12.5 km)\"><div class=\"Nico-cen-btns\"><button class=\"cc Nico-jlocincancel\">\u53d6\u6d88</button><button class=\"ok Nico-jlocinok\">\u53d1\u9001</button></div></div></div><div class=\"Nico-cen Nico-jdrawmodal w260\"><div class=\"Nico-cen-box\" style=\"width:290px; padding:20px;\"><h4>\u624b\u7ed8\u6d82\u9e26</h4><canvas class=\"Nico-draw-canvas Nico-jdrawcanvas\" width=\"246\" height=\"246\"></canvas><div class=\"Nico-draw-tools\"><input type=\"color\" class=\"Nico-draw-color Nico-jdrawcolor\" value=\"#222222\"><input type=\"range\" class=\"Nico-draw-range Nico-jdrawwidth\" min=\"1\" max=\"20\" value=\"3\"><div class=\"Nico-draw-btn-icon Nico-jdraweraser\" title=\"\u6a61\u76ae\u64e6\"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M20 20H7L3 16C2.5 15.5 2.5 14.5 3 14L13 4C13.5 3.5 14.5 3.5 15 4L20 9C20.5 9.5 20.5 10.5 20 11L11 20H20V20Z\"/></svg></div><div class=\"Nico-draw-btn-icon Nico-jdrawundo\" title=\"\u64a4\u9500\"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M3 10h10a5 5 0 0 1 5 5v2\"/><polyline points=\"7 6 3 10 7 14\"/></svg></div><div class=\"Nico-draw-btn-icon Nico-jdrawclear\" title=\"\u6e05\u7a7a\u753b\u5e03\"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><polyline points=\"3 6 5 6 21 6\"></polyline><path d=\"M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2\"></path></svg></div></div><div class=\"Nico-cen-btns\"><button class=\"cc Nico-jdrawcancel\">\u53d6\u6d88</button><button class=\"ok Nico-jdrawok\">\u53d1\u9001</button></div></div></div><div class=\"Nico-cen Nico-jgiftmodal w260\"><div class=\"Nico-cen-box\"><h4>\u9001\u4e13\u5c5e\u793c\u7269</h4><input type=\"text\" class=\"Nico-cen-inp Nico-jgiftdesc\" placeholder=\"\u793c\u7269\u540d\u79f0\u6216\u63cf\u8ff0\"><div class=\"Nico-tf-grp\"><span>\u00a5</span><input type=\"number\" class=\"Nico-jgiftpr\" placeholder=\"0.00\"></div><input type=\"text\" class=\"Nico-cen-inp Nico-jgiftnote\" placeholder=\"\u5907\u6ce8\u7559\u8a00\"><div class=\"Nico-cen-btns\"><button class=\"cc Nico-jgiftcancel\">\u53d6\u6d88</button><button class=\"ok Nico-jgiftok\">\u9001\u51fa</button></div></div></div><div class=\"Nico-cen Nico-jlinkmodal w260\"><div class=\"Nico-cen-box\"><h4>\u5206\u4eab\u5916\u94fe</h4><input type=\"text\" class=\"Nico-cen-inp Nico-jlinkurl\" placeholder=\"\u7f51\u5740URL...\"><input type=\"text\" class=\"Nico-cen-inp Nico-jlinktitle\" placeholder=\"\u5206\u4eab\u6807\u9898...\"><div class=\"Nico-cen-btns\"><button class=\"cc Nico-jlinkcancel\">\u53d6\u6d88</button><button class=\"ok Nico-jlinkok\">\u5206\u4eab</button></div></div></div><div class=\"Nico-cen Nico-jtfmodal\"><div class=\"Nico-cen-box\"><h4>\u53d1\u8d77\u8f6c\u8d26</h4><div class=\"Nico-tf-grp\"><span>\u00a5</span><input type=\"number\" class=\"Nico-jtfamt\" placeholder=\"0.00\"></div><input type=\"text\" class=\"Nico-cen-inp Nico-jtftitle\" placeholder=\"\u8f6c\u8d26\u8bf4\u660e\"><div class=\"Nico-cen-btns\"><button class=\"cc Nico-jtfcancel\">\u53d6\u6d88</button><button class=\"ok Nico-jtfok\">\u786e\u8ba4</button></div></div></div><div class=\"Nico-cen Nico-jimgmodal w260\"><div class=\"Nico-cen-box\"><h4>\u53d1\u9001\u539f\u56fe\u76f4\u94fe</h4><input type=\"text\" class=\"Nico-cen-inp Nico-jimgurl\" placeholder=\"\u56fe\u7247URL\u76f4\u94fe/AI\u63d0\u793a\u8bcd...\"><input type=\"text\" class=\"Nico-cen-inp Nico-jimgdesc\" placeholder=\"\u56fe\u7247\u63cf\u8ff0\"><div class=\"Nico-cen-btns\"><button class=\"cc Nico-jimgcancel\">\u53d6\u6d88</button><button class=\"ok Nico-jimgok\">\u53d1\u9001\u76f4\u94fe</button></div></div></div><div class=\"Nico-cen Nico-jtxtimgmodal w260\"><div class=\"Nico-cen-box\"><h4>\u6587\u5b57\u56fe\u6c14\u6ce1</h4><textarea class=\"Nico-jtxtimgin\" rows=\"3\" placeholder=\"\u8f93\u5165\u6c14\u6ce1\u4e2d\u7684\u6587\u5b57...\"></textarea><div class=\"Nico-cen-btns\"><button class=\"cc Nico-jtxtimgcancel\">\u53d6\u6d88</button><button class=\"ok Nico-jtxtimgok\">\u53d1\u9001</button></div></div></div><div class=\"Nico-cen Nico-jfoodmodal w260\"><div class=\"Nico-cen-box\"><h4>\u9ad8\u7ea7\u5916\u5356</h4><input type=\"text\" class=\"Nico-cen-inp Nico-jfoodshop\" placeholder=\"\u5e97\u94fa\u540d\u79f0 (\u5982: \u80af\u5fb7\u57fa)\"><input type=\"text\" class=\"Nico-cen-inp Nico-jfooditems\" placeholder=\"\u5916\u5356\u5185\u5bb9 (\u5982: \u70b8\u9e21\u5957\u9910)\"><input type=\"text\" class=\"Nico-cen-inp Nico-jfoodaddr\" placeholder=\"\u914d\u9001\u5730\u5740\"><input type=\"text\" class=\"Nico-cen-inp Nico-jfoodname\" placeholder=\"\u6536\u4ef6\u4eba\u59d3\u540d\"><input type=\"text\" class=\"Nico-cen-inp Nico-jfoodphone\" placeholder=\"\u6536\u4ef6\u4eba\u7535\u8bdd\"><div class=\"Nico-cen-btns\"><button class=\"cc Nico-jfoodcancel\">\u53d6\u6d88</button><button class=\"ok Nico-jfoodok\">\u4e0b\u5355\u5e76\u53d1\u9001</button></div></div></div><div class=\"Nico-cen Nico-jvoicemodal w260\"><div class=\"Nico-cen-box\"><h4>\u8bed\u97f3\u5f02\u5e38/\u964d\u7ea7</h4><textarea class=\"Nico-jvoicetxt\" rows=\"3\" placeholder=\"\u9ea6\u514b\u98ce\u53d7\u9650\uff0c\u8bf7\u8f93\u5165\u6587\u5b57...\"></textarea><div class=\"Nico-cen-btns\"><button class=\"cc Nico-jvoicecancel\">\u53d6\u6d88</button><button class=\"ok Nico-jvoiceok\">\u751f\u6210\u8bed\u97f3\u6761</button></div></div></div><div class=\"Nico-cen Nico-jpatmodal w260\"><div class=\"Nico-cen-box\"><h4>\u4fee\u6539\u62cd\u4e00\u62cd\u540e\u7f00</h4><div style=\"font-size:12px;color:#888;text-align:center;font-weight:300;\">\u53cc\u51fb\u5934\u50cf\u65f6\u751f\u6548</div><input type=\"text\" class=\"Nico-cen-inp Nico-jpatin\" placeholder=\"\u4f8b\u5982\uff1a\u7684\u8111\u888b\"><div class=\"Nico-cen-btns\"><button class=\"cc Nico-jpatcancel\">\u53d6\u6d88</button><button class=\"ok Nico-jpatok\">\u786e\u5b9a</button></div></div></div><div class=\"Nico-cen Nico-jaddemomodal w260\"><div class=\"Nico-cen-box\"><h4>\u6dfb\u52a0\u81ea\u5b9a\u4e49\u8868\u60c5</h4><input type=\"text\" class=\"Nico-cen-inp Nico-jaddemourl\" placeholder=\"\u56fe\u7247URL\u76f4\u94fe...\"><input type=\"text\" class=\"Nico-cen-inp Nico-jaddemotxt\" placeholder=\"\u8bf4\u660e\u6587\u5b57\"><div class=\"Nico-cen-btns\"><button class=\"cc Nico-jaddemocancel\">\u53d6\u6d88</button><button class=\"ok Nico-jaddemook\">\u4fdd\u5b58</button></div></div></div><div class=\"Nico-cen Nico-jviewmodal w260\"><div class=\"Nico-cen-box\"><h4>\u64a4\u56de\u539f\u6587</h4><textarea class=\"Nico-cen-inp Nico-jviewtxt\" rows=\"4\" readonly style=\"background:rgba(255,255,255,.8);\"></textarea><div class=\"Nico-cen-btns\"><button class=\"ok Nico-jviewclose\" style=\"width:100%;\">\u5173\u95ed</button></div></div></div><div class=\"Nico-cen Nico-jpyqsendmodal w260\"><div class=\"Nico-cen-box\"><h4>\u53d1\u670b\u53cb\u5708</h4><textarea class=\"Nico-cen-inp Nico-jpyqsendtxt\" rows=\"3\" placeholder=\"\u8fd9\u4e00\u523b\u7684\u60f3\u6cd5...\"></textarea><input type=\"text\" class=\"Nico-cen-inp Nico-jpyqsendimg\" placeholder=\"\u914d\u56feURL\u76f4\u94fe (\u53ef\u9009)\"><textarea class=\"Nico-cen-inp Nico-jpyqsendtxtimg\" rows=\"2\" placeholder=\"\u6216\u8005\u76f4\u63a5\u53d1\u6587\u5b57\u56fe\uff0c\u8f93\u5165\u5185\u5bb9...\"></textarea><div class=\"Nico-cen-btns\"><button class=\"cc Nico-jpyqsendcancel\">\u53d6\u6d88</button><button class=\"ok Nico-jpyqsendok\">\u53d1\u8868</button></div></div></div><div class=\"Nico-cen Nico-jpyqcommodal w260\"><div class=\"Nico-cen-box\"><h4>\u8bc4\u8bba\u52a8\u6001</h4><textarea class=\"Nico-cen-inp Nico-jpyqcomtxt\" rows=\"3\" placeholder=\"\u8bf4\u70b9\u4ec0\u4e48...\"></textarea><div class=\"Nico-cen-btns\"><button class=\"cc Nico-jpyqcomcancel\">\u53d6\u6d88</button><button class=\"ok Nico-jpyqcomok\">\u8bc4\u8bba</button></div></div></div><div class=\"Nico-mf Nico-jlocmodal\"><div class=\"Nico-mbox\"><div class=\"Nico-mh\"><span>\u4f4d\u7f6e\u5171\u4eab</span><div class=\"Nico-mc Nico-jlocclose\">&times;</div></div><div class=\"Nico-loc-wrap\"><div class=\"Nico-cp-top\" style=\"z-index:10;\"><div class=\"Nico-cp-avs\"><div class=\"Nico-cp-face Nico-bind-lav\"></div><div class=\"Nico-cp-face Nico-jcpf2 Nico-bind-rav\"></div></div><div class=\"Nico-loc-dist\">\u76f8\u8ddd <span id=\"Nc-loc-dist\">\u672a\u77e5</span></div></div><div class=\"Nico-radar\"><div class=\"Nico-radar-wave\"></div><div class=\"Nico-radar-wave w2\"></div><div class=\"Nico-anchor a1\"><div class=\"Nico-anchor-av Nico-bind-lav\"></div><div class=\"Nico-anchor-tip t1\">\u672a\u83b7\u53d6\u4f4d\u7f6e</div></div><div class=\"Nico-anchor a2\"><div class=\"Nico-anchor-av Nico-bind-rav\"></div><div class=\"Nico-anchor-tip t2\">\u672a\u83b7\u53d6\u4f4d\u7f6e</div></div></div><button class=\"Nico-loc-send Nico-jlocsend\">\u53d1\u9001\u5f53\u524d\u5b9a\u4f4d</button></div></div></div><div class=\"Nico-mf Nico-jemomodal\"><div class=\"Nico-mbox\"><div class=\"Nico-mh\"><span>\u9009\u62e9\u8868\u60c5\u4e0e\u4e92\u52a8</span><div class=\"Nico-mc Nico-jemoclose\">&times;</div></div><div class=\"Nico-emo-games\"><div class=\"Nico-emo-gamebtn jemo-poke\"><svg viewBox=\"0 0 24 24\"><path d=\"M11 2a2 2 0 0 0-2 2v5H6a2 2 0 0 0-2 2v2c0 4.4 3.6 8 8 8h3a5 5 0 0 0 5-5v-6a2 2 0 0 0-2-2h-3V4a2 2 0 0 0-2-2z\"/></svg>\u6233\u4e00\u6233</div><div class=\"Nico-emo-gamebtn jemo-dice\"><svg viewBox=\"0 0 24 24\"><rect x=\"3\" y=\"3\" width=\"18\" height=\"18\" rx=\"2\" ry=\"2\"/><circle cx=\"8.5\" cy=\"8.5\" r=\"1.5\"/><circle cx=\"15.5\" cy=\"15.5\" r=\"1.5\"/><circle cx=\"15.5\" cy=\"8.5\" r=\"1.5\"/><circle cx=\"8.5\" cy=\"15.5\" r=\"1.5\"/><circle cx=\"12\" cy=\"12\" r=\"1.5\"/></svg>\u6447\u9ab0\u5b50</div><div class=\"Nico-emo-gamebtn jemo-rps\"><svg viewBox=\"0 0 24 24\"><circle cx=\"6\" cy=\"6\" r=\"3\"/><circle cx=\"6\" cy=\"18\" r=\"3\"/><line x1=\"20\" y1=\"4\" x2=\"8.12\" y2=\"15.88\"/><line x1=\"14.47\" y1=\"14.48\" x2=\"20\" y2=\"20\"/><line x1=\"8.12\" y1=\"8.12\" x2=\"12\" y2=\"12\"/></svg>\u731c\u62f3</div><div class=\"Nico-emo-addbtn Nico-jaddemobtn\" title=\"\u6dfb\u52a0\u8868\u60c5\"><svg viewBox=\"0 0 24 24\"><line x1=\"12\" y1=\"5\" x2=\"12\" y2=\"19\"></line><line x1=\"5\" y1=\"12\" x2=\"19\" y2=\"12\"></line></svg></div></div><div class=\"Nico-emo Nico-jemolist\"></div></div></div><div class=\"Nico-mf Nico-jmumodal\"><div class=\"Nico-mbox\"><div class=\"Nico-mh\"><span>\u4e00\u8d77\u542c\u6b4c</span><div class=\"Nico-mc Nico-jmuclose\">&times;</div></div><div class=\"Nico-mu\"><div class=\"Nico-mu-stage\"><div class=\"Nico-mu-face Nico-jmuf1 Nico-bind-lav\"></div><div class=\"Nico-mu-waves Nico-jmuwaves\"><span class=\"Nico-wave\"></span><span class=\"Nico-wave\"></span><span class=\"Nico-wave\"></span></div><div class=\"Nico-mu-face Nico-jmuf2 Nico-bind-rav\"></div></div><div class=\"Nico-mu-time-disp\">\u7d2f\u8ba1\u542c\u6b4c: <span id=\"Nc-mutime-val\">0</span> \u5206\u949f</div><div class=\"Nico-mu-now Nico-jmunow\" style=\"text-align:center;font-size:13px;color:#555;font-weight:400;\">\u672a\u5728\u64ad\u653e</div><div class=\"Nico-mu-ctrl\"><div class=\"Nico-mu-btn Nico-jmuprev\"><svg viewBox=\"0 0 24 24\"><polygon points=\"19 20 9 12 19 4 19 20\" fill=\"none\" stroke=\"#222\" stroke-width=\"1.5\"/><line x1=\"5\" y1=\"19\" x2=\"5\" y2=\"5\" stroke=\"#222\" stroke-width=\"1.5\"/></svg></div><div class=\"Nico-mu-btn main Nico-jmuplay\"><svg class=\"Nico-jmuicon\" viewBox=\"0 0 24 24\"><polygon points=\"7 4 19 12 7 20 7 4\" fill=\"#222\"/></svg></div><div class=\"Nico-mu-btn Nico-jmunext\"><svg viewBox=\"0 0 24 24\"><polygon points=\"5 4 15 12 5 20 5 4\" fill=\"none\" stroke=\"#222\" stroke-width=\"1.5\"/><line x1=\"19\" y1=\"5\" x2=\"19\" y2=\"19\" stroke=\"#222\" stroke-width=\"1.5\"/></svg></div></div><div class=\"Nico-mu-inp-wrap\"><input type=\"text\" class=\"Nico-mu-name Nico-jmuname\" placeholder=\"\u6b4c\u66f2\u540d\u79f0\"><input type=\"text\" class=\"Nico-mu-artist Nico-jmuartist\" placeholder=\"\u6b4c\u624b\u540d\"></div><div class=\"Nico-mu-inp-wrap\" style=\"margin-top:-8px;\"><input type=\"text\" class=\"Nico-mu-cover Nico-jmucover\" placeholder=\"\u4e13\u8f91\u5c01\u9762URL\u76f4\u94fe (\u53ef\u9009)\"></div><div class=\"Nico-mu-inp-wrap\" style=\"margin-top:-8px;\"><input type=\"text\" class=\"Nico-mu-inp Nico-jmuinp\" placeholder=\"\u5355\u66f2\u76f4\u94fe\u6216\u7f51\u6613\u4e91ID\"><button class=\"Nico-mu-add Nico-jmuaddbtn\">\u6dfb\u52a0</button></div><div class=\"Nico-mu-list Nico-jmulist\"></div><button class=\"Nico-mu-invbtn Nico-jmuinv\">\u53d1\u9001\u4e00\u8d77\u542c\u6b4c\u9080\u8bf7</button></div></div></div><div class=\"Nico-mf Nico-jcpmodal\"><div class=\"Nico-mbox\"><div class=\"Nico-mh\"><span>\u60c5\u4fa3\u7a7a\u95f4</span><div class=\"Nico-mc Nico-jcpclose\">&times;</div></div><div class=\"Nico-cp\"><div class=\"Nico-cp-top\"><div class=\"Nico-cp-avs\"><div class=\"Nico-cp-face Nico-bind-lav\"></div><div class=\"Nico-cp-face Nico-jcpf2 Nico-bind-rav\"></div></div><div class=\"Nico-cp-id-group\"><span class=\"Nico-bind-lnm\"></span> & <span class=\"Nico-bind-rnm\"></span></div></div><div class=\"Nico-cp-rel Nico-jcprel\"></div><div class=\"Nico-cp-sec\"><div class=\"Nico-cp-h\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"#222\" stroke-width=\"1.5\"><path d=\"M12 20h9\"/><path d=\"M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z\"/></svg> \u4e2a\u6027\u7b7e\u540d</div><div class=\"Nico-sign-mod\"><div class=\"Nico-sign-hd\"><div class=\"Nico-cp-face Nico-bind-lav\" style=\"width:30px;height:30px;border-width:.5px;\"></div><div class=\"Nico-cp-id-group Nico-bind-lnm\" style=\"font-size:12px;\"></div></div><div class=\"Nico-sign-bd Nico-jcsign\"></div></div><div class=\"Nico-sign-mod\" style=\"margin-top:12px; background:rgba(255,255,255,.9); border:.5px solid rgba(0,0,0,.03);\"><div class=\"Nico-sign-hd\"><div class=\"Nico-cp-face Nico-bind-rav\" style=\"width:30px;height:30px;margin-left:0;border-width:.5px;\"></div><div class=\"Nico-cp-id-group Nico-bind-rnm\" style=\"font-size:12px;\"></div><div class=\"Nico-signdel Nico-jsigndel\" title=\"\u5220\u9664\u4e2a\u7b7e\"><svg viewBox=\"0 0 24 24\" width=\"16\" height=\"16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\"><path d=\"M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2\"></path></svg></div></div><div class=\"Nico-sign-bd Nico-jusign-disp\"></div><div class=\"Nico-sign-act\"><input type=\"text\" class=\"Nico-jusignin\" placeholder=\"\u8f93\u5165\u65b0\u7b7e\u540d...\"><button class=\"Nico-jusignsave\">\u53d1\u5e03\u66f4\u65b0</button></div></div></div><div class=\"Nico-cp-sec\"><div class=\"Nico-cp-h\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"#222\" stroke-width=\"1.5\"><rect x=\"3\" y=\"4\" width=\"18\" height=\"18\" rx=\"2\" ry=\"2\"/><line x1=\"16\" y1=\"2\" x2=\"16\" y2=\"6\"/><line x1=\"8\" y1=\"2\" x2=\"8\" y2=\"6\"/><line x1=\"3\" y1=\"10\" x2=\"21\" y2=\"10\"/></svg> \u60f3\u505a\u7684\u5c0f\u4e8b</div><div class=\"Nico-cp-things Nico-jcpthings\"></div><div class=\"Nico-cp-addrow\"><select class=\"Nico-jcpwho\"><option value=\"Me\">\u6211</option><option value=\"You\">\u5bf9\u65b9</option></select><input type=\"text\" class=\"Nico-jcpthingin\" placeholder=\"\u6dfb\u52a0\u5f85\u529e...\"><button class=\"Nico-jcpthingadd\">\u52a0</button></div></div><div class=\"Nico-cp-sec\"><div class=\"Nico-cp-h\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"#222\" stroke-width=\"1.5\"><rect x=\"3\" y=\"3\" width=\"18\" height=\"18\" rx=\"2\" ry=\"2\"/><circle cx=\"8.5\" cy=\"8.5\" r=\"1.5\"/><polyline points=\"21 15 16 10 5 21\"/></svg> \u7eaa\u5ff5\u65e5</div><div class=\"Nico-cp-days Nico-jcpdays\"></div><div class=\"Nico-cp-addrow\"><input type=\"text\" class=\"Nico-jcpdayname\" placeholder=\"\u4e8b\u4ef6\u540d\u79f0\"><input type=\"date\" class=\"Nico-jcpdaydate\"><button class=\"Nico-jcpdayadd\">\u52a0</button></div></div><div class=\"Nico-cp-sec\"><div class=\"Nico-cp-h\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"#222\" stroke-width=\"1.5\"><rect x=\"3\" y=\"3\" width=\"18\" height=\"18\" rx=\"2\" ry=\"2\"/><circle cx=\"8.5\" cy=\"8.5\" r=\"1.5\"/><polyline points=\"21 15 16 10 5 21\"/></svg> \u76f8\u518c\u4e0e\u56fe\u6587</div><div class=\"Nico-cp-albums Nico-jcpalbums\"></div><div class=\"Nico-cp-addrow\"><input type=\"text\" class=\"Nico-jcpalbumtxt\" placeholder=\"\u8fd9\u4e00\u523b\u7684\u60f3\u6cd5...\" style=\"min-width:30px;\"><input type=\"text\" class=\"Nico-jcpalbumimg\" placeholder=\"\u56fe\u7247URL\u76f4\u94fe(\u53ef\u9009)\" style=\"min-width:50px;\"><button class=\"Nico-jcpalbumadd\">\u4e0a\u4f20</button></div></div></div></div></div></div></div></div>\n<div id=\"Nc-Data-1\" style=\"display:none;\">$1</div><div id=\"Nc-Data-2\" style=\"display:none;\">$2</div><div id=\"Nc-Data-3\" style=\"display:none;\">$3</div><div id=\"Nc-Data-4\" style=\"display:none;\">$4</div><div id=\"Nc-Data-5\" style=\"display:none;\">$5</div><div id=\"Nc-Data-6\" style=\"display:none;\">$6</div><div id=\"Nc-Data-7\" style=\"display:none;\">$7</div><div id=\"Nc-Data-8\" style=\"display:none;\">$8</div><div id=\"Nc-Data-9\" style=\"display:none;\">$9</div><div id=\"Nc-Data-10\" style=\"display:none;\">$10</div><div id=\"Nc-Data-11\" style=\"display:none;\">$11</div><div id=\"Nc-Data-12\" style=\"display:none;\">$12</div><div id=\"Nc-Data-13\" style=\"display:none;\">$13</div><div id=\"Nc-Data-14\" style=\"display:none;\">$14</div><div id=\"Nc-Data-15\" style=\"display:none;\">$15</div>\n\n";
     
     // ===== 4. 正则匹配 =====
-    var PHONE_REGEX = new RegExp("(?:<手机>|&lt;手机&gt;|<phone>|&lt;phone&gt;)[\\s\\S]*?(?:<左侧头像>|&lt;左侧头像&gt;|<lAv>|&lt;lAv&gt;)([\\s\\S]*?)(?:</左侧头像>|&lt;/左侧头像&gt;|<\\/lAv>|&lt;\\/lAv&gt;)[\\s\\S]*?(?:<左侧名字>|&lt;左侧名字&gt;|<lName>|&lt;lName&gt;)([\\s\\S]*?)(?:</左侧名字>|&lt;/左侧名字&gt;|<\\/lName>|&lt;\\/lName&gt;)[\\s\\S]*?(?:<右侧头像>|&lt;右侧头像&gt;|<rAv>|&lt;rAv&gt;)([\\s\\S]*?)(?:</右侧头像>|&lt;/右侧头像&gt;|<\\/rAv>|&lt;\\/rAv&gt;)[\\s\\S]*?(?:<右侧名字>|&lt;右侧名字&gt;|<rName>|&lt;rName&gt;)([\\s\\S]*?)(?:</右侧名字>|&lt;/右侧名字&gt;|<\\/rName>|&lt;\\/rName&gt;)[\\s\\S]*?(?:<关系>|&lt;关系&gt;|<rel>|&lt;rel&gt;)([\\s\\S]*?)(?:</关系>|&lt;/关系&gt;|<\\/rel>|&lt;\\/rel&gt;)[\\s\\S]*?(?:<左侧位置>|&lt;左侧位置&gt;|<cLoc>|&lt;cLoc&gt;)([\\s\\S]*?)(?:</左侧位置>|&lt;/左侧位置&gt;|<\\/cLoc>|&lt;\\/cLoc&gt;)[\\s\\S]*?(?:<右侧位置>|&lt;右侧位置&gt;|<uLoc>|&lt;uLoc&gt;)([\\s\\S]*?)(?:</右侧位置>|&lt;/右侧位置&gt;|<\\/uLoc>|&lt;\\/uLoc&gt;)[\\s\\S]*?(?:<距离>|&lt;距离&gt;|<dist>|&lt;dist&gt;)([\\s\\S]*?)(?:</距离>|&lt;/距离&gt;|<\\/dist>|&lt;\\/dist&gt;)[\\s\\S]*?(?:<左侧签名>|&lt;左侧签名&gt;|<cSign>|&lt;cSign&gt;)([\\s\\S]*?)(?:</左侧签名>|&lt;/左侧签名&gt;|<\\/cSign>|&lt;\\/cSign&gt;)[\\s\\S]*?(?:<右侧签名>|&lt;右侧签名&gt;|<uSign>|&lt;uSign&gt;)([\\s\\S]*?)(?:</右侧签名>|&lt;/右侧签名&gt;|<\\/uSign>|&lt;\\/uSign&gt;)[\\s\\S]*?(?:<左侧拍一拍>|&lt;左侧拍一拍&gt;|<cPat>|&lt;cPat&gt;)([\\s\\S]*?)(?:</左侧拍一拍>|&lt;/左侧拍一拍&gt;|<\\/cPat>|&lt;\\/cPat&gt;)[\\s\\S]*?(?:<右侧拍一拍>|&lt;右侧拍一拍&gt;|<uPat>|&lt;uPat&gt;)([\\s\\S]*?)(?:</右侧拍一拍>|&lt;/右侧拍一拍&gt;|<\\/uPat>|&lt;\\/uPat&gt;)[\\s\\S]*?(?:<系统消息>|&lt;系统消息&gt;|<sysMsg>|&lt;sysMsg&gt;)([\\s\\S]*?)(?:</系统消息>|&lt;/系统消息&gt;|<\\/sysMsg>|&lt;\\/sysMsg&gt;)[\\s\\S]*?(?:<消息>|&lt;消息&gt;|<msg>|&lt;msg&gt;)([\\s\\S]*?)(?:</消息>|&lt;/消息&gt;|<\\/msg>|&lt;\\/msg&gt;)[\\s\\S]*?(?:<朋友圈>|&lt;朋友圈&gt;|<pyq>|&lt;pyq&gt;)([\\s\\S]*?)(?:</朋友圈>|&lt;/朋友圈&gt;|<\\/pyq>|&lt;\\/pyq&gt;)[\\s\\S]*?(?:<情侣相册>|&lt;情侣相册&gt;|<cpAlbum>|&lt;cpAlbum&gt;)([\\s\\S]*?)(?:</情侣相册>|&lt;/情侣相册&gt;|<\\/cpAlbum>|&lt;\\/cpAlbum&gt;)[\\s\\S]*?(?:</手机>|&lt;/手机&gt;|<\\/phone>|&lt;\\/phone&gt;)", 'i');
+    var PHONE_REGEX = new RegExp("<phone>\\s*<lAv>([\\s\\S]*?)</lAv>\\s*<lName>([\\s\\S]*?)</lName>\\s*<rAv>([\\s\\S]*?)</rAv>\\s*<rName>([\\s\\S]*?)</rName>\\s*<rel>([\\s\\S]*?)</rel>\\s*<cLoc>([\\s\\S]*?)</cLoc>\\s*<uLoc>([\\s\\S]*?)</uLoc>\\s*<dist>([\\s\\S]*?)</dist>\\s*<cSign>([\\s\\S]*?)</cSign>\\s*<uSign>([\\s\\S]*?)</uSign>\\s*<cPat>([\\s\\S]*?)</cPat>\\s*<uPat>([\\s\\S]*?)</uPat>\\s*<sysMsg>([\\s\\S]*?)</sysMsg>\\s*<msg>([\\s\\S]*?)</msg>\\s*<pyq>([\\s\\S]*?)</pyq>\\s*<cpAlbum>([\\s\\S]*?)</cpAlbum>\\s*</phone>", 'i');
     
     // ===== 5. 替换$1-$15占位符 =====
     function fillTemplate(args){
@@ -59,70 +43,39 @@
     
     // ===== 6. 处理文本节点里的<phone>标签 =====
     function processTextNode(node){
-        try{
-            var text = node.nodeValue;
-            if(!text) return;
-            if(text.indexOf('<手机>') === -1 && text.indexOf('&lt;手机') === -1 && text.indexOf('<phone>') === -1 && text.indexOf('&lt;phone') === -1) return;
-            
-            var normalized = text.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
-            var match = normalized.match(PHONE_REGEX);
-            if(!match){
-                // 文本节点可能被拆分，尝试在父元素的完整 innerHTML 中匹配
-                if(node.parentNode && node.parentNode.innerHTML){
-                    var pNorm = node.parentNode.innerHTML.replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&amp;/g,'&');
-                    var pMatch = pNorm.match(PHONE_REGEX);
-                    if(pMatch && node.parentNode.parentNode){
-                        var pArgs = [];
-                        for(var pi=1;pi<=16;pi++){ pArgs.push(pMatch[pi]||''); }
-                        var pDiv = document.createElement('div');
-                        pDiv.innerHTML = fillTemplate(pArgs);
-                        var pPhone = pDiv.firstElementChild || pDiv.querySelector('.Nico-stage');
-                        if(pPhone){
-                            node.parentNode.parentNode.replaceChild(pPhone, node.parentNode);
-                            pPhone.setAttribute('data-nico-rendered','true');
-                            setTimeout(function(){ if(window.initNicoPhone){try{window.initNicoPhone(pPhone);}catch(e){}} },50);
-                        }
-                    }
+        var text = node.nodeValue;
+        if(!text || text.indexOf('<phone>') === -1 && text.indexOf('&lt;phone&gt;') === -1) return;
+        
+        // 处理转义版本
+        var normalized = text.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
+        var match = normalized.match(PHONE_REGEX);
+        if(!match) return;
+        
+        var args = [];
+        for(var i=1;i<=15;i++){
+            args.push(match[i] || '');
+        }
+        
+        var html = fillTemplate(args);
+        var div = document.createElement('div');
+        div.innerHTML = html;
+        var phoneEl = div.firstElementChild || div.querySelector('.Nico-stage');
+        
+        if(phoneEl && phoneEl.setAttribute && node.parentNode){
+            node.parentNode.replaceChild(phoneEl, node);
+phoneEl.setAttribute('data-nico-rendered', 'true');
+            // 初始化组件
+            setTimeout(function(){
+                if(window.initNicoPhone){
+                    window.initNicoPhone(phoneEl);
+                    console.log('[NicoPhone] 手机组件已初始化');
                 }
-                return;
-            }
-            
-            var args = [];
-            for(var i=1;i<=16;i++){
-                args.push(match[i] || '');
-            }
-            
-            var html = fillTemplate(args);
-            var div = document.createElement('div');
-            div.innerHTML = html;
-            var phoneEl = div.firstElementChild || div.querySelector('.Nico-stage');
-            
-            if(phoneEl && phoneEl.setAttribute && node.parentNode){
-                node.parentNode.replaceChild(phoneEl, node);
-                phoneEl.setAttribute('data-nico-rendered', 'true');
-                setTimeout(function(){
-                    if(window.initNicoPhone){
-                        try{ window.initNicoPhone(phoneEl); }catch(e){ console.error('[NicoPhone] init失败:', e); }
-                    }
-                }, 50);
-            }
-        }catch(e){
-            console.error('[NicoPhone] processTextNode错误:', e);
+            }, 50);
         }
     }
     
     // ===== 7. 递归处理节点 =====
     function processNode(node){
-        // 检测 <phone> 元素
-        if(node.nodeType === 1 && node.tagName && node.tagName.toLowerCase() === 'phone'){
-            processPhoneElement(node);
-            return;
-        }
-        if(node.nodeType === 1 && node.querySelectorAll){
-            var phones = node.querySelectorAll('phone');
-            for(var pi=0;pi<phones.length;pi++){ processPhoneElement(phones[pi]); }
-        }
-        
         if(!node) return;
         if(node.nodeType === 3){ // 文本节点
             processTextNode(node);
@@ -217,207 +170,6 @@
         }
     }
     startObserver();
-    
-    // ===== 增强：监听所有 iframe 内部的 DOM 变化（手机端消息可能在 iframe 中）=====
-    function observeIframe(iframe){
-        try{
-            var iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
-            if(!iframeDoc || !iframeDoc.body) return;
-            if(iframe._nicoObserved) return;
-            iframe._nicoObserved = true;
-            var iframeObserver = new MutationObserver(function(mutations){
-                if(isProcessing) return;
-                isProcessing = true;
-                try{
-                    for(var i=0;i<mutations.length;i++){
-                        var mut = mutations[i];
-                        if(mut.addedNodes){
-                            for(var j=0;j<mut.addedNodes.length;j++){
-                                processNode(mut.addedNodes[j]);
-                            }
-                        }
-                        if(mut.type === 'characterData'){
-                            processNode(mut.target);
-                        }
-                    }
-                }catch(e){}
-                isProcessing = false;
-            });
-            iframeObserver.observe(iframeDoc.body, { childList:true, subtree:true, characterData:true });
-            // 立即扫描 iframe 中已有的 phone 标签
-            scanDocForPhone(iframeDoc);
-        }catch(e){}
-    }
-    
-    // 扫描指定 document 中的 phone 文本节点
-    function scanDocForPhone(doc){
-        try{
-            if(!doc || !doc.body) return;
-            scanPlaceholders(doc);
-            // 方法1：遍历文本节点
-            var walker = doc.createTreeWalker(doc.body, NodeFilter.SHOW_TEXT, null, false);
-            var nodesToProcess = [];
-            var node;
-            while(node = walker.nextNode()){
-                if(node.nodeValue && (node.nodeValue.indexOf('<手机>') >= 0 || node.nodeValue.indexOf('&lt;手机') >= 0 || node.nodeValue.indexOf('<phone>') >= 0 || node.nodeValue.indexOf('&lt;phone') >= 0)){
-                    nodesToProcess.push(node);
-                }
-            }
-            nodesToProcess.forEach(function(n){ processTextNode(n); });
-            
-            // 方法2：检查叶子元素的 innerHTML（处理转义标签被拆分的情况）
-            var allEls = doc.querySelectorAll('*');
-            for(var i=0;i<allEls.length;i++){
-                var el = allEls[i];
-                if(el.children.length === 0 && el.innerHTML && el.innerHTML.indexOf('phone') >= 0){
-                    var inner = el.innerHTML;
-                    if(inner.indexOf('&lt;手机') >= 0 || inner.indexOf('<手机>') >= 0 || inner.indexOf('&lt;phone') >= 0 || inner.indexOf('<phone>') >= 0){
-                        if(el.getAttribute('data-nico-rendered')) continue;
-                        var normalized = inner.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
-                        var match = normalized.match(PHONE_REGEX);
-                        if(match){
-                            var args = [];
-                            for(var j=1;j<=16;j++){ args.push(match[j] || ''); }
-                            var html = fillTemplate(args);
-                            var div = document.createElement('div');
-                            div.innerHTML = html;
-                            var phoneEl = div.firstElementChild || div.querySelector('.Nico-stage');
-                            if(phoneEl && el.parentNode){
-                                el.parentNode.replaceChild(phoneEl, el);
-                                phoneEl.setAttribute('data-nico-rendered', 'true');
-                                (function(p){
-                                    setTimeout(function(){
-                                        if(window.initNicoPhone){ try{ window.initNicoPhone(p); }catch(e){} }
-                                    }, 50);
-                                })(phoneEl);
-                            }
-                        }
-                    }
-                }
-            }
-        }catch(e){
-            console.error('[NicoPhone] scanDocForPhone错误:', e);
-        }
-    }
-    
-    // 定期检查新 iframe 并监听
-    
-    // 处理 <phone> HTML 元素（手机端可能没被正则替换，直接插入了DOM）
-    
-    // ===== 处理正则生成的占位标记 =====
-    function processPlaceholder(el){
-        try{
-            if(!el || el.getAttribute('data-nico-rendered')) return;
-            var raw = el.getAttribute('data-nico-phone');
-            if(!raw) return;
-            el.setAttribute('data-nico-rendered', 'true');
-            
-            // 解析参数（用 || 分隔，和 replaceString 中顺序一致）
-            var args = raw.split('||');
-            while(args.length < 16) args.push('');
-            
-            console.log('[NicoPhone] 占位标记解析: lName=' + args[1] + ', msg长度=' + (args[13]||'').length);
-            
-            var html = fillTemplate(args);
-            var div = document.createElement('div');
-            div.innerHTML = html;
-            var phoneEl = div.firstElementChild || div.querySelector('.Nico-stage');
-            if(phoneEl && el.parentNode){
-                el.parentNode.replaceChild(phoneEl, el);
-                setTimeout(function(){
-                    if(window.initNicoPhone){
-                        try{ window.initNicoPhone(phoneEl); console.log('[NicoPhone] 占位标记渲染完成'); }catch(e){ console.error('[NicoPhone] 初始化失败:', e); }
-                    }
-                }, 50);
-            }
-        }catch(e){
-            console.error('[NicoPhone] processPlaceholder错误:', e);
-        }
-    }
-    
-    function scanPlaceholders(doc){
-        try{
-            if(!doc || !doc.querySelectorAll) return;
-            var placeholders = doc.querySelectorAll('.Nico-placeholder[data-nico-phone]');
-            for(var i=0;i<placeholders.length;i++){
-                processPlaceholder(placeholders[i]);
-            }
-        }catch(e){}
-    }
-
-    function processPhoneElement(phoneEl){
-        try{
-            if(!phoneEl || phoneEl.getAttribute('data-nico-processed')) return;
-            phoneEl.setAttribute('data-nico-processed', 'true');
-            
-            console.log('[NicoPhone] 发现<phone>元素，开始处理');
-            
-            // 直接用 querySelector 提取所有子标签（浏览器会转小写）
-            var tagMap = {
-                'lAv':['左侧头像','lAv','lav'], 'lName':['左侧名字','lName','lname'],
-                'rAv':['右侧头像','rAv','rav'], 'rName':['右侧名字','rName','rname'],
-                'rel':['关系','rel'], 'cLoc':['左侧位置','cLoc','cloc'], 'uLoc':['右侧位置','uLoc','uloc'],
-                'dist':['距离','dist'], 'cSign':['左侧签名','cSign','csign'], 'uSign':['右侧签名','uSign','usign'],
-                'cPat':['左侧拍一拍','cPat','cpat'], 'uPat':['右侧拍一拍','uPat','upat'],
-                'sysMsg':['系统消息','sysMsg','sysmsg'], 'msg':['消息','msg'],
-                'pyq':['朋友圈','pyq'], 'cpAlbum':['情侣相册','cpAlbum','cpalbum']
-            };
-            
-            function getTagContent(names){
-                for(var n=0;n<names.length;n++){
-                    var el = phoneEl.querySelector(names[n]);
-                    if(el) return (el.textContent || el.innerText || '').trim();
-                }
-                return '';
-            }
-            
-            var args = [];
-            var tagOrder = ['lAv','lName','rAv','rName','rel','cLoc','uLoc','dist','cSign','uSign','cPat','uPat','sysMsg','msg','pyq','cpAlbum'];
-            tagOrder.forEach(function(t){ args.push(getTagContent(tagMap[t])); });
-            
-            console.log('[NicoPhone] 提取参数: lName=' + args[1] + ', rName=' + args[3] + ', msg长度=' + (args[13]||'').length);
-            
-            // 生成手机组件HTML
-            var html = fillTemplate(args);
-            var div = document.createElement('div');
-            div.innerHTML = html;
-            var newEl = div.firstElementChild || div.querySelector('.Nico-stage');
-            if(newEl && phoneEl.parentNode){
-                phoneEl.parentNode.replaceChild(newEl, phoneEl);
-                console.log('[NicoPhone] <phone>已替换为手机组件');
-                setTimeout(function(){
-                    if(window.initNicoPhone){
-                        try{ window.initNicoPhone(newEl); console.log('[NicoPhone] 手机组件初始化完成'); }catch(e){ console.error('[NicoPhone] 初始化失败:', e); }
-                    } else {
-                        console.error('[NicoPhone] initNicoPhone不存在');
-                    }
-                }, 150);
-            } else {
-                console.error('[NicoPhone] 替换失败: newEl=' + !!newEl + ', parentNode=' + !!phoneEl.parentNode);
-            }
-        }catch(e){
-            console.error('[NicoPhone] 处理phone元素失败:', e);
-        }
-    }
-    
-    // 扫描 document 中所有 <phone> 元素
-    function scanPhoneElements(doc){
-        try{
-            if(!doc || !doc.querySelectorAll) return;
-            var phones = doc.querySelectorAll('phone');
-            for(var i=0;i<phones.length;i++){
-                processPhoneElement(phones[i]);
-            }
-        }catch(e){}
-    }
-    setInterval(function(){
-        var iframes = document.querySelectorAll('iframe');
-        for(var i=0;i<iframes.length;i++){
-            observeIframe(iframes[i]);
-        }
-    }, 2000);
-    // 立即扫描主 document 中已有的内容
-    setTimeout(function(){ scanDocForPhone(document); }, 500);
 
     // ===== 9. iframe 支持：扫描所有 iframe 内的手机组件 =====
     // 在指定document中初始化所有未初始化的手机组件
@@ -446,40 +198,22 @@
     // 扫描主document + 所有iframe
     function scanAllDocs(){
         var total = 0;
-        // 扫描占位标记（正则替换后的轻量标记）
-        try{ scanPlaceholders(document); }catch(e){}
-        // 扫描转义文本和HTML元素
-        try{ scanDocForPhone(document); }catch(e){}
         try{ total += initNicoPhonesInDoc(document); }catch(e){}
-        
         var iframes = document.querySelectorAll('iframe');
         for(var i=0;i<iframes.length;i++){
             try{
                 var iframeDoc = iframes[i].contentDocument || iframes[i].contentWindow.document;
                 if(iframeDoc && iframeDoc.body){
-                    try{ scanPlaceholders(iframeDoc); }catch(e){}
-                    try{ scanDocForPhone(iframeDoc); }catch(e){}
                     total += initNicoPhonesInDoc(iframeDoc);
+                    // 监听iframe内部DOM变化
                     if(!iframes[i]._nicoObserved){
                         iframes[i]._nicoObserved = true;
                         try{
-                            var obs = new MutationObserver(function(){ 
-                                try{ scanPlaceholders(iframeDoc); }catch(e){}
-                                try{ scanDocForPhone(iframeDoc); }catch(e){}
-                                initNicoPhonesInDoc(iframeDoc); 
-                            });
+                            var obs = new MutationObserver(function(){ initNicoPhonesInDoc(iframeDoc); });
                             obs.observe(iframeDoc.body, { childList:true, subtree:true });
                         }catch(e){}
                     }
                 }
-            }catch(e){}
-        }
-        
-        try{ scanPhoneElements(document); }catch(e){}
-        for(var k=0;k<iframes.length;k++){
-            try{
-                var idoc = iframes[k].contentDocument || iframes[k].contentWindow.document;
-                if(idoc) scanPhoneElements(idoc);
             }catch(e){}
         }
         return total;
@@ -496,106 +230,10 @@
         scanCount++;
         if(scanCount >= 20){
             clearInterval(fastInterval);
-            // 持续扫描：前60秒每秒扫描，之后每5秒扫描（手机端消息加载慢）
-    var scanTime = 0;
-    setInterval(function(){
-        scanAllDocs();
-        scanTime++;
-    }, 1000);
-    // 同时监听聊天区域的特定容器
-    function observeChatContainer(){
-        try{
-            var containers = document.querySelectorAll('#chat, .mes, .message, [id^="mes_"]');
-            containers.forEach(function(c){
-                if(!c._nicoObserved){
-                    c._nicoObserved = true;
-                    var obs = new MutationObserver(function(){ scanAllDocs(); });
-                    obs.observe(c, { childList:true, subtree:true, characterData:true });
-                }
-            });
-        }catch(e){}
-    }
-    observeChatContainer();
-    setInterval(observeChatContainer, 3000);
+            setInterval(scanAllDocs, 3000);
         }
     }, 1000);
     setTimeout(scanAllDocs, 300);
 
     console.log('[NicoPhone] 扩展加载完成');
-
-    // ===== SillyTavern 事件钩子（最可靠的渲染时机）=====
-    function getSTContext(){
-        try{
-            if(typeof SillyTavern !== 'undefined' && SillyTavern.getContext){
-                return SillyTavern.getContext();
-            }
-        }catch(e){}
-        try{
-            if(window.parent && window.parent.SillyTavern && window.parent.SillyTavern.getContext){
-                return window.parent.SillyTavern.getContext();
-            }
-        }catch(e){}
-        return null;
-    }
-    
-    function hookSillyTavernEvents(){
-        var ctx = getSTContext();
-        if(!ctx){
-            // 500ms 后重试
-            setTimeout(hookSillyTavernEvents, 500);
-            return;
-        }
-        
-        var eventSource = ctx.eventSource;
-        var eventTypes = ctx.eventTypes || ctx.event_types;
-        
-        if(!eventSource || !eventTypes){
-            setTimeout(hookSillyTavernEvents, 500);
-            return;
-        }
-        
-        console.log('[NicoPhone] 已连接 SillyTavern 事件系统');
-        
-        // 消息渲染完成时处理
-        function onMessageRendered(){
-            setTimeout(function(){
-                try{ scanAllDocs(); }catch(e){}
-            }, 100);
-        }
-        
-        // 监听多种事件
-        var events = [
-            'MESSAGE_RECEIVED', 'MESSAGE_SENT', 'CHAT_CHANGED',
-            'APP_READY', 'GENERATION_ENDED', 'CHARACTER_MESSAGE_RENDERED',
-            'USER_MESSAGE_RENDERED', 'MESSAGE_UPDATED', 'MESSAGE_EDITED'
-        ];
-        
-        events.forEach(function(evtName){
-            if(eventTypes[evtName]){
-                try{
-                    eventSource.on(eventTypes[evtName], onMessageRendered);
-                }catch(e){}
-            }
-        });
-        
-        // 也监听 eventSource 的 make 事件（兼容旧版）
-        try{
-            if(eventSource.on){
-                eventSource.on('message_received', onMessageRendered);
-                eventSource.on('message_sent', onMessageRendered);
-                eventSource.on('chat_changed', onMessageRendered);
-            }
-        }catch(e){}
-        
-        // 首次扫描
-        setTimeout(function(){ try{ scanAllDocs(); }catch(e){} }, 500);
-    }
-    
-    // 启动事件钩子
-    if(document.readyState === 'loading'){
-        document.addEventListener('DOMContentLoaded', function(){ setTimeout(hookSillyTavernEvents, 300); });
-    } else {
-        setTimeout(hookSillyTavernEvents, 300);
-    }
-
 })();
