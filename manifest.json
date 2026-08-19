@@ -1,0 +1,10 @@
+{
+    "display_name": "Nico2 Phone Extension",
+    "command": "nico2-phone",
+    "author": "Nico2",
+    "description": "聊天窗口内嵌手机组件，支持语音、通话、表情包、朋友圈、情侣空间等完整交互功能。用<phone>标签包裹触发。",
+    "version": "1.0.0",
+    "js": [
+        "nico2-phone-extension.js"
+    ]
+}
