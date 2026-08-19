@@ -1,4 +1,4 @@
-// nico2 Phone Extension - 聊天窗口内嵌手机组件
+// nico Phone Extension - 聊天窗口内嵌手机组件
 // 基于正则规则改造，支持JS交互
 (function(){
     console.log('[NicoPhone] 扩展加载中...');
@@ -76,6 +76,16 @@ phoneEl.setAttribute('data-nico-rendered', 'true');
     
     // ===== 7. 递归处理节点 =====
     function processNode(node){
+        // 检测 <phone> 元素
+        if(node.nodeType === 1 && node.tagName && node.tagName.toLowerCase() === 'phone'){
+            processPhoneElement(node);
+            return;
+        }
+        if(node.nodeType === 1 && node.querySelectorAll){
+            var phones = node.querySelectorAll('phone');
+            for(var pi=0;pi<phones.length;pi++){ processPhoneElement(phones[pi]); }
+        }
+        
         if(!node) return;
         if(node.nodeType === 3){ // 文本节点
             processTextNode(node);
@@ -217,6 +227,71 @@ phoneEl.setAttribute('data-nico-rendered', 'true');
     }
     
     // 定期检查新 iframe 并监听
+    
+    // 处理 <phone> HTML 元素（手机端可能没被正则替换，直接插入了DOM）
+    function processPhoneElement(phoneEl){
+        try{
+            if(!phoneEl || phoneEl.getAttribute('data-nico-processed')) return;
+            phoneEl.setAttribute('data-nico-processed', 'true');
+            
+            // 读取 phone 元素的完整内容
+            var phoneHTML = phoneEl.outerHTML;
+            var match = phoneHTML.match(/<phone>[\s\S]*?<\/phone>/);
+            if(!match){
+                // 尝试读取 innerHTML 拼接
+                var inner = phoneEl.innerHTML;
+                phoneHTML = '<phone>' + inner + '</phone>';
+            }
+            
+            // 用扩展的正则解析
+            var args = [];
+            var phMatch = phoneHTML.match(PHONE_REGEX);
+            if(phMatch){
+                for(var i=1;i<=15;i++){
+                    args.push(phMatch[i] || '');
+                }
+            } else {
+                // 正则不匹配，尝试手动提取子标签
+                var tags = ['lAv','lName','rAv','rName','rel','cLoc','uLoc','dist','cSign','uSign','cPat','uPat','sysMsg','msg','pyq','cpAlbum'];
+                tags.forEach(function(tag){
+                    var el = phoneEl.querySelector(tag);
+                    args.push(el ? el.textContent : '');
+                });
+            }
+            
+            if(args.length < 16){
+                // 补齐
+                while(args.length < 16) args.push('');
+            }
+            
+            // 生成手机组件HTML
+            var html = fillTemplate(args);
+            var div = document.createElement('div');
+            div.innerHTML = html;
+            var newEl = div.firstElementChild || div.querySelector('.Nico-stage');
+            if(newEl && phoneEl.parentNode){
+                phoneEl.parentNode.replaceChild(newEl, phoneEl);
+                setTimeout(function(){
+                    if(window.initNicoPhone){
+                        try{ window.initNicoPhone(newEl); }catch(e){}
+                    }
+                }, 150);
+            }
+        }catch(e){
+            console.error('[NicoPhone] 处理phone元素失败:', e);
+        }
+    }
+    
+    // 扫描 document 中所有 <phone> 元素
+    function scanPhoneElements(doc){
+        try{
+            if(!doc || !doc.querySelectorAll) return;
+            var phones = doc.querySelectorAll('phone');
+            for(var i=0;i<phones.length;i++){
+                processPhoneElement(phones[i]);
+            }
+        }catch(e){}
+    }
     setInterval(function(){
         var iframes = document.querySelectorAll('iframe');
         for(var i=0;i<iframes.length;i++){
@@ -269,6 +344,16 @@ phoneEl.setAttribute('data-nico-rendered', 'true');
                         }catch(e){}
                     }
                 }
+            }catch(e){}
+        }
+        
+        // 扫描 <phone> HTML 元素（正则没替换的情况）
+        try{ scanPhoneElements(document); }catch(e){}
+        var iframes2 = document.querySelectorAll('iframe');
+        for(var k=0;k<iframes2.length;k++){
+            try{
+                var idoc = iframes2[k].contentDocument || iframes2[k].contentWindow.document;
+                if(idoc) scanPhoneElements(idoc);
             }catch(e){}
         }
         return total;
