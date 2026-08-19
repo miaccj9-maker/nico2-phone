@@ -370,7 +370,27 @@ phoneEl.setAttribute('data-nico-rendered', 'true');
         scanCount++;
         if(scanCount >= 20){
             clearInterval(fastInterval);
-            setInterval(scanAllDocs, 3000);
+            // 持续扫描：前60秒每秒扫描，之后每5秒扫描（手机端消息加载慢）
+    var scanTime = 0;
+    setInterval(function(){
+        scanAllDocs();
+        scanTime++;
+    }, 1000);
+    // 同时监听聊天区域的特定容器
+    function observeChatContainer(){
+        try{
+            var containers = document.querySelectorAll('#chat, .mes, .message, [id^="mes_"]');
+            containers.forEach(function(c){
+                if(!c._nicoObserved){
+                    c._nicoObserved = true;
+                    var obs = new MutationObserver(function(){ scanAllDocs(); });
+                    obs.observe(c, { childList:true, subtree:true, characterData:true });
+                }
+            });
+        }catch(e){}
+    }
+    observeChatContainer();
+    setInterval(observeChatContainer, 3000);
         }
     }, 1000);
     setTimeout(scanAllDocs, 300);
