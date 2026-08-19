@@ -1,4 +1,4 @@
-// nico2 Phone Extension - 聊天窗口内嵌手机组件
+// nico Phone Extension - 聊天窗口内嵌手机组件
 // 基于正则规则改造，支持JS交互
 (function(){
     console.log('[NicoPhone] 扩展加载中...');
@@ -170,6 +170,61 @@ phoneEl.setAttribute('data-nico-rendered', 'true');
         }
     }
     startObserver();
+    
+    // ===== 增强：监听所有 iframe 内部的 DOM 变化（手机端消息可能在 iframe 中）=====
+    function observeIframe(iframe){
+        try{
+            var iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+            if(!iframeDoc || !iframeDoc.body) return;
+            if(iframe._nicoObserved) return;
+            iframe._nicoObserved = true;
+            var iframeObserver = new MutationObserver(function(mutations){
+                if(isProcessing) return;
+                isProcessing = true;
+                try{
+                    for(var i=0;i<mutations.length;i++){
+                        var mut = mutations[i];
+                        if(mut.addedNodes){
+                            for(var j=0;j<mut.addedNodes.length;j++){
+                                processNode(mut.addedNodes[j]);
+                            }
+                        }
+                        if(mut.type === 'characterData'){
+                            processNode(mut.target);
+                        }
+                    }
+                }catch(e){}
+                isProcessing = false;
+            });
+            iframeObserver.observe(iframeDoc.body, { childList:true, subtree:true, characterData:true });
+            // 立即扫描 iframe 中已有的 phone 标签
+            scanDocForPhone(iframeDoc);
+        }catch(e){}
+    }
+    
+    // 扫描指定 document 中的 phone 文本节点
+    function scanDocForPhone(doc){
+        try{
+            if(!doc || !doc.body) return;
+            var walker = doc.createTreeWalker(doc.body, NodeFilter.SHOW_TEXT, null, false);
+            var node;
+            while(node = walker.nextNode()){
+                if(node.nodeValue && (node.nodeValue.indexOf('<phone>') >= 0 || node.nodeValue.indexOf('&lt;phone&gt;') >= 0)){
+                    processTextNode(node);
+                }
+            }
+        }catch(e){}
+    }
+    
+    // 定期检查新 iframe 并监听
+    setInterval(function(){
+        var iframes = document.querySelectorAll('iframe');
+        for(var i=0;i<iframes.length;i++){
+            observeIframe(iframes[i]);
+        }
+    }, 2000);
+    // 立即扫描主 document 中已有的内容
+    setTimeout(function(){ scanDocForPhone(document); }, 500);
 
     // ===== 9. iframe 支持：扫描所有 iframe 内的手机组件 =====
     // 在指定document中初始化所有未初始化的手机组件
@@ -177,63 +232,4 @@ phoneEl.setAttribute('data-nico-rendered', 'true');
         if(!doc || !doc.body) return 0;
         var stages = doc.querySelectorAll('.Nico-stage:not([data-nico-rendered])');
         var count = 0;
-        for(var j=0;j<stages.length;j++){
-            (function(stage){
-                stage.setAttribute('data-nico-rendered','true');
-                count++;
-                setTimeout(function(){
-                    if(window.initNicoPhone){
-                        try{
-                            window.initNicoPhone(stage);
-                            console.log('[NicoPhone] 手机组件已初始化');
-                        }catch(e){
-                            console.error('[NicoPhone] 初始化报错:', e);
-                        }
-                    }
-                }, 150);
-            })(stages[j]);
-        }
-        return count;
-    }
-    // 扫描主document + 所有iframe
-    function scanAllDocs(){
-        var total = 0;
-        try{ total += initNicoPhonesInDoc(document); }catch(e){}
-        var iframes = document.querySelectorAll('iframe');
-        for(var i=0;i<iframes.length;i++){
-            try{
-                var iframeDoc = iframes[i].contentDocument || iframes[i].contentWindow.document;
-                if(iframeDoc && iframeDoc.body){
-                    total += initNicoPhonesInDoc(iframeDoc);
-                    // 监听iframe内部DOM变化
-                    if(!iframes[i]._nicoObserved){
-                        iframes[i]._nicoObserved = true;
-                        try{
-                            var obs = new MutationObserver(function(){ initNicoPhonesInDoc(iframeDoc); });
-                            obs.observe(iframeDoc.body, { childList:true, subtree:true });
-                        }catch(e){}
-                    }
-                }
-            }catch(e){}
-        }
-        return total;
-    }
-    // 监听主document DOM变化（动态加载的消息也能捕获）
-    try{
-        var mainObs = new MutationObserver(scanAllDocs);
-        mainObs.observe(document.body, { childList:true, subtree:true });
-    }catch(e){}
-    // 前20秒高频扫描(每秒)，之后低频扫描(每3秒)
-    var scanCount = 0;
-    var fastInterval = setInterval(function(){
-        scanAllDocs();
-        scanCount++;
-        if(scanCount >= 20){
-            clearInterval(fastInterval);
-            setInterval(scanAllDocs, 3000);
-        }
-    }, 1000);
-    setTimeout(scanAllDocs, 300);
-
-    console.log('[NicoPhone] 扩展加载完成');
-})();
+        for(var j=0;j<stages.length;j++)
