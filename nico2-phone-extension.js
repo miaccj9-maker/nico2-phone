@@ -1,7 +1,23 @@
-// nico22 Phone Extension - 聊天窗口内嵌手机组件
+// nico Phone Extension - 聊天窗口内嵌手机组件
 // 基于正则规则改造，支持JS交互
 (function(){
     console.log('[NicoPhone] 扩展加载中...');
+    
+    // ===== 临时调试：手机端加载 vConsole =====
+    if(/Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) && window.innerWidth < 900){
+        try{
+            var vcScript = document.createElement('script');
+            vcScript.src = 'https://unpkg.com/vconsole@latest/dist/vconsole.min.js';
+            vcScript.onload = function(){
+                window.vConsole = new window.VConsole();
+                console.log('[NicoPhone] vConsole 已加载 - 手机端调试面板');
+            };
+            vcScript.onerror = function(){
+                console.log('[NicoPhone] vConsole 加载失败（网络问题）');
+            };
+            document.head.appendChild(vcScript);
+        }catch(e){ console.error('[NicoPhone] vConsole初始化失败:', e); }
+    }
     
     // ===== 1. 注入CSS（只注入一次）=====
     if(!document.getElementById('nico-phone-css')){
@@ -464,4 +480,80 @@
     setTimeout(scanAllDocs, 300);
 
     console.log('[NicoPhone] 扩展加载完成');
+
+    // ===== SillyTavern 事件钩子（最可靠的渲染时机）=====
+    function getSTContext(){
+        try{
+            if(typeof SillyTavern !== 'undefined' && SillyTavern.getContext){
+                return SillyTavern.getContext();
+            }
+        }catch(e){}
+        try{
+            if(window.parent && window.parent.SillyTavern && window.parent.SillyTavern.getContext){
+                return window.parent.SillyTavern.getContext();
+            }
+        }catch(e){}
+        return null;
+    }
+    
+    function hookSillyTavernEvents(){
+        var ctx = getSTContext();
+        if(!ctx){
+            // 500ms 后重试
+            setTimeout(hookSillyTavernEvents, 500);
+            return;
+        }
+        
+        var eventSource = ctx.eventSource;
+        var eventTypes = ctx.eventTypes || ctx.event_types;
+        
+        if(!eventSource || !eventTypes){
+            setTimeout(hookSillyTavernEvents, 500);
+            return;
+        }
+        
+        console.log('[NicoPhone] 已连接 SillyTavern 事件系统');
+        
+        // 消息渲染完成时处理
+        function onMessageRendered(){
+            setTimeout(function(){
+                try{ scanAllDocs(); }catch(e){}
+            }, 100);
+        }
+        
+        // 监听多种事件
+        var events = [
+            'MESSAGE_RECEIVED', 'MESSAGE_SENT', 'CHAT_CHANGED',
+            'APP_READY', 'GENERATION_ENDED', 'CHARACTER_MESSAGE_RENDERED',
+            'USER_MESSAGE_RENDERED', 'MESSAGE_UPDATED', 'MESSAGE_EDITED'
+        ];
+        
+        events.forEach(function(evtName){
+            if(eventTypes[evtName]){
+                try{
+                    eventSource.on(eventTypes[evtName], onMessageRendered);
+                }catch(e){}
+            }
+        });
+        
+        // 也监听 eventSource 的 make 事件（兼容旧版）
+        try{
+            if(eventSource.on){
+                eventSource.on('message_received', onMessageRendered);
+                eventSource.on('message_sent', onMessageRendered);
+                eventSource.on('chat_changed', onMessageRendered);
+            }
+        }catch(e){}
+        
+        // 首次扫描
+        setTimeout(function(){ try{ scanAllDocs(); }catch(e){} }, 500);
+    }
+    
+    // 启动事件钩子
+    if(document.readyState === 'loading'){
+        document.addEventListener('DOMContentLoaded', function(){ setTimeout(hookSillyTavernEvents, 300); });
+    } else {
+        setTimeout(hookSillyTavernEvents, 300);
+    }
+
 })();
