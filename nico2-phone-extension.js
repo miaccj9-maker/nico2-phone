@@ -1,4 +1,4 @@
-// nico Phone Extension - 聊天窗口内嵌手机组件
+// nico22 Phone Extension - 聊天窗口内嵌手机组件
 // 基于正则规则改造，支持JS交互
 (function(){
     console.log('[NicoPhone] 扩展加载中...');
@@ -253,6 +253,7 @@
     function scanDocForPhone(doc){
         try{
             if(!doc || !doc.body) return;
+            scanPlaceholders(doc);
             // 方法1：遍历文本节点
             var walker = doc.createTreeWalker(doc.body, NodeFilter.SHOW_TEXT, null, false);
             var nodesToProcess = [];
@@ -302,6 +303,48 @@
     // 定期检查新 iframe 并监听
     
     // 处理 <phone> HTML 元素（手机端可能没被正则替换，直接插入了DOM）
+    
+    // ===== 处理正则生成的占位标记 =====
+    function processPlaceholder(el){
+        try{
+            if(!el || el.getAttribute('data-nico-rendered')) return;
+            var raw = el.getAttribute('data-nico-phone');
+            if(!raw) return;
+            el.setAttribute('data-nico-rendered', 'true');
+            
+            // 解析参数（用 || 分隔，和 replaceString 中顺序一致）
+            var args = raw.split('||');
+            while(args.length < 16) args.push('');
+            
+            console.log('[NicoPhone] 占位标记解析: lName=' + args[1] + ', msg长度=' + (args[13]||'').length);
+            
+            var html = fillTemplate(args);
+            var div = document.createElement('div');
+            div.innerHTML = html;
+            var phoneEl = div.firstElementChild || div.querySelector('.Nico-stage');
+            if(phoneEl && el.parentNode){
+                el.parentNode.replaceChild(phoneEl, el);
+                setTimeout(function(){
+                    if(window.initNicoPhone){
+                        try{ window.initNicoPhone(phoneEl); console.log('[NicoPhone] 占位标记渲染完成'); }catch(e){ console.error('[NicoPhone] 初始化失败:', e); }
+                    }
+                }, 50);
+            }
+        }catch(e){
+            console.error('[NicoPhone] processPlaceholder错误:', e);
+        }
+    }
+    
+    function scanPlaceholders(doc){
+        try{
+            if(!doc || !doc.querySelectorAll) return;
+            var placeholders = doc.querySelectorAll('.Nico-placeholder[data-nico-phone]');
+            for(var i=0;i<placeholders.length;i++){
+                processPlaceholder(placeholders[i]);
+            }
+        }catch(e){}
+    }
+
     function processPhoneElement(phoneEl){
         try{
             if(!phoneEl || phoneEl.getAttribute('data-nico-processed')) return;
@@ -403,18 +446,28 @@
     // 扫描主document + 所有iframe
     function scanAllDocs(){
         var total = 0;
+        // 扫描占位标记（正则替换后的轻量标记）
+        try{ scanPlaceholders(document); }catch(e){}
+        // 扫描转义文本和HTML元素
+        try{ scanDocForPhone(document); }catch(e){}
         try{ total += initNicoPhonesInDoc(document); }catch(e){}
+        
         var iframes = document.querySelectorAll('iframe');
         for(var i=0;i<iframes.length;i++){
             try{
                 var iframeDoc = iframes[i].contentDocument || iframes[i].contentWindow.document;
                 if(iframeDoc && iframeDoc.body){
+                    try{ scanPlaceholders(iframeDoc); }catch(e){}
+                    try{ scanDocForPhone(iframeDoc); }catch(e){}
                     total += initNicoPhonesInDoc(iframeDoc);
-                    // 监听iframe内部DOM变化
                     if(!iframes[i]._nicoObserved){
                         iframes[i]._nicoObserved = true;
                         try{
-                            var obs = new MutationObserver(function(){ initNicoPhonesInDoc(iframeDoc); });
+                            var obs = new MutationObserver(function(){ 
+                                try{ scanPlaceholders(iframeDoc); }catch(e){}
+                                try{ scanDocForPhone(iframeDoc); }catch(e){}
+                                initNicoPhonesInDoc(iframeDoc); 
+                            });
                             obs.observe(iframeDoc.body, { childList:true, subtree:true });
                         }catch(e){}
                     }
@@ -422,22 +475,11 @@
             }catch(e){}
         }
         
-        // 扫描 <phone> HTML 元素（正则没替换的情况）
         try{ scanPhoneElements(document); }catch(e){}
-        var iframes2 = document.querySelectorAll('iframe');
-        for(var k=0;k<iframes2.length;k++){
+        for(var k=0;k<iframes.length;k++){
             try{
-                var idoc = iframes2[k].contentDocument || iframes2[k].contentWindow.document;
+                var idoc = iframes[k].contentDocument || iframes[k].contentWindow.document;
                 if(idoc) scanPhoneElements(idoc);
-            }catch(e){}
-        }
-        
-        // 扫描所有 iframe 中的转义 phone 文本
-        var allIframes = document.querySelectorAll('iframe');
-        for(var fi=0;fi<allIframes.length;fi++){
-            try{
-                var iDoc = allIframes[fi].contentDocument || allIframes[fi].contentWindow.document;
-                if(iDoc && iDoc.body) scanDocForPhone(iDoc);
             }catch(e){}
         }
         return total;
@@ -557,4 +599,3 @@
     }
 
 })();
-
