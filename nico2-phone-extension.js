@@ -504,10 +504,17 @@ phoneEl.setAttribute('data-nico-rendered', 'true');
                     // 包裹居中容器，保留其他文字，手机组件居中显示
                     var wrappedPhone = '<div class="nico-phone-wrap-center" style="display:block;margin:10px auto;clear:both;float:none;text-align:left;">' + phoneHtml + '</div>';
                     var newHtml = normalized.replace(usedRegex, wrappedPhone);
-                    // 精确清理：仅移除手机组件闭合div后紧跟的情侣相册残留（锚定</div>，不扫描全文，无误删风险）
-                    newHtml = newHtml.replace(/(<\/div>)\s*(?:\r?\n)?\[(?:图文上传|相册上传):[^\n]*(?:\r?\n)?<\/情侣相册>\s*(?:<\/手机>)?/, '$1');
-                    newHtml = newHtml.replace(/(<\/div>)\s*(?:\r?\n)?\[(?:图文上传|相册上传):[^\n]*(?:\r?\n)?<\/cpAlbum>\s*(?:<\/phone>)?/i, '$1');
                     el.innerHTML = newHtml;
+                    // 最小化DOM清理：仅修改手机容器后紧邻的第一个文本节点，移除相册残留，不触碰其他节点
+                    var _wrap = el.querySelector('.nico-phone-wrap-center');
+                    if(_wrap && _wrap.nextSibling && _wrap.nextSibling.nodeType === 3){
+                        var _nv = _wrap.nextSibling.nodeValue;
+                        if(_nv && (_nv.indexOf('[图文上传:') >= 0 || _nv.indexOf('[相册上传:') >= 0)){
+                            _nv = _nv.replace(/(?:\r?\n\s*)?\[(?:图文上传|相册上传):[^\n]*(?:\r?\n)?<\/情侣相册>\s*(?:<\/手机>)?/, '');
+                            _nv = _nv.replace(/(?:\r?\n\s*)?\[(?:图文上传|相册上传):[^\n]*(?:\r?\n)?<\/cpAlbum>\s*(?:<\/phone>)?/i, '');
+                            _wrap.nextSibling.nodeValue = _nv;
+                        }
+                    }
                     el.setAttribute('data-nico-rendered', 'true');
                     var phoneEl = el.querySelector('.Nico-stage');
                     if(phoneEl){
