@@ -510,6 +510,25 @@ phoneEl.setAttribute('data-nico-rendered', 'true');
                     if(phoneEl){
                         // 设置 .Nico-stage 的 data-nico-rendered，防止 MutationObserver 重复初始化
                         phoneEl.setAttribute('data-nico-rendered', 'true');
+                        // 清理手机组件后残留的情侣相册文本（正则最后一个标签非贪婪匹配未消费的内容）
+                        var _next = phoneEl.nextSibling;
+                        while(_next){
+                            var _remove = false;
+                            if(_next.nodeType === 3){
+                                var _t = _next.textContent;
+                                var _trimmed = _t.trim();
+                                if(_trimmed === ''){ _remove = true; }
+                                else if(_t.indexOf('[图文上传:') >= 0 || _t.indexOf('[照片:') >= 0 || _t.indexOf('[相册上传:') >= 0 || _t.indexOf('[图文:') >= 0 || _t.indexOf('</情侣相册>') >= 0 || _t.indexOf('</手机>') >= 0 || _t.indexOf('</cpAlbum>') >= 0 || _t.indexOf('</phone>') >= 0){ _remove = true; }
+                                else { break; }
+                            } else if(_next.nodeType === 1){
+                                var _tag = _next.tagName.toLowerCase();
+                                if(_tag === '情侣相册' || _tag === 'cpalbum' || _tag === '手机' || _tag === 'phone'){ _remove = true; }
+                                else { break; }
+                            } else { break; }
+                            var _nextNext = _next.nextSibling;
+                            if(_remove && _next.parentNode){ _next.parentNode.removeChild(_next); }
+                            _next = _nextNext;
+                        }
                         // 确保手机组件居中
                         phoneEl.style.display = 'flex';
                         phoneEl.style.justifyContent = 'center';
