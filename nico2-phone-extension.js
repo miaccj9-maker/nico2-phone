@@ -505,6 +505,15 @@ phoneEl.setAttribute('data-nico-rendered', 'true');
                     var wrappedPhone = '<div class="nico-phone-wrap-center" style="display:block;margin:10px auto;clear:both;float:none;text-align:left;">' + phoneHtml + '</div>';
                     var newHtml = normalized.replace(usedRegex, wrappedPhone);
                     el.innerHTML = newHtml;
+                    // 重新执行同元素内的script标签（innerHTML插入的script不会自动执行，会导致其他状态栏交互失效）
+                    var _scripts = el.querySelectorAll('script');
+                    for(var _si=0;_si<_scripts.length;_si++){
+                        var _oldS = _scripts[_si];
+                        var _newS = document.createElement('script');
+                        if(_oldS.src){ _newS.src = _oldS.src; }
+                        _newS.textContent = _oldS.textContent;
+                        if(_oldS.parentNode){ _oldS.parentNode.replaceChild(_newS, _oldS); }
+                    }
                     // 最小化DOM清理：仅修改手机容器后紧邻的第一个文本节点，移除相册残留，不触碰其他节点
                     var _wrap = el.querySelector('.nico-phone-wrap-center');
                     if(_wrap && _wrap.nextSibling && _wrap.nextSibling.nodeType === 3){
