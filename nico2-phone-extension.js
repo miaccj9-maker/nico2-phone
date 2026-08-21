@@ -48,18 +48,23 @@
     // ===== 6. 处理文本节点里的<phone>标签 =====
     function processTextNode(node){
         var text = node.nodeValue;
-        if(!text || text.indexOf('<phone>') === -1 && text.indexOf('&lt;phone&gt;') === -1) return;
-        
-        // 处理转义版本
-        var normalized = text.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
-        var match = normalized.match(PHONE_REGEX);
+        if(!text) return;
+        // 检查是否包含手机标签（中英文，转义或未转义）
+        var hasPhone = text.indexOf('<phone>') >= 0 || text.indexOf('&lt;phone&gt;') >= 0 ||
+                       text.indexOf('<手机>') >= 0 || text.indexOf('&lt;手机&gt;') >= 0;
+        if(!hasPhone) return;
+        // 在原始文本中定位手机标签范围（不全局反转义，保护其他组件的转义状态）
+        var _phoneRe = /(?:<手机|&lt;手机|<phone|&lt;phone)[\s\S]*?(?:<\/手机>|&lt;\/手机&gt;|<\/phone>|&lt;\/phone&gt;|$)/i;
+        var _pm = text.match(_phoneRe);
+        if(!_pm) return;
+        var _start = _pm.index, _end = _start + _pm[0].length;
+        // 只反转义手机标签部分
+        var _phoneRaw = text.substring(_start, _end);
+        var normalized = _phoneRaw.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
+        var match = normalized.match(PHONE_REGEX) || normalized.match(PHONE_REGEX_CN);
         if(!match) return;
-        
         var args = [];
-        for(var i=1;i<=15;i++){
-            args.push(match[i] || '');
-        }
-        // 还原已渲染的<img>为markdown，防止textContent丢失图片URL
+        for(var i=1;i<=16;i++){ args.push(match[i] || ''); }
         if(args[13]){
             args[13] = args[13].replace(/<img\b[^>]*>/gi, function(tag){
                 var s = (tag.match(/src=["']([^"']*)["']/i)||[,''])[1];
@@ -67,31 +72,65 @@
                 return '!['+a+']('+s+')';
             }).replace(/<br\s*\/?>/gi, '\n');
         }
-        
         var html = fillTemplate(args);
         var div = document.createElement('div');
         div.innerHTML = html;
         var phoneEl = div.firstElementChild || div.querySelector('.Nico-stage');
-        
         if(phoneEl && phoneEl.setAttribute && node.parentNode){
-            node.parentNode.replaceChild(phoneEl, node);
-phoneEl.setAttribute('data-nico-rendered', 'true');
-            // 初始化组件
-            setTimeout(function(){
-                if(window.initNicoPhone){
-                    window.initNicoPhone(phoneEl);
-                    console.log('[NicoPhone] 手机组件已初始化');
-                }
-            }, 50);
+            var parent = node.parentNode;
+            var _before = text.substring(0, _start);
+            var _after = text.substring(_end);
+            if(_before){ parent.insertBefore(document.createTextNode(_before), node); }
+            parent.replaceChild(phoneEl, node);
+            if(_after){
+                var _afterNode = document.createTextNode(_after);
+                if(phoneEl.nextSibling){ parent.insertBefore(_afterNode, phoneEl.nextSibling); }
+                else { parent.appendChild(_afterNode); }
+            }
+            phoneEl.setAttribute('data-nico-rendered', 'true');
+            setTimeout(function(){ if(window.initNicoPhone){ window.initNicoPhone(phoneEl); } }, 50);
         }
     }
     
     // ===== 7. 递归处理节点 =====
     function processNode(node){
-        // 检测 <phone> 元素
-        if(node.nodeType === 1 && node.tagName && node.tagName.toLowerCase() === 'phone'){
-            processPhoneElement(node);
-            return;
+        // 检测 <phone> 或 <手机> 元素
+        if(node.nodeType === 1 && node.tagName){
+            var _tag = node.tagName.toLowerCase();
+            if(_tag === 'phone'){
+                processPhoneElement(node);
+                return;
+            }
+            if(_tag === '手机'){
+                // 中文手机元素：用innerHTML获取内容，正则匹配后替换为手机组件
+                try{
+                    var _content = node.innerHTML;
+                    var _wrapper = '<手机>' + _content + '</手机>';
+                    var _norm = _wrapper.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
+                    var _match = _norm.match(PHONE_REGEX) || _norm.match(PHONE_REGEX_CN);
+                    if(_match){
+                        var _args = [];
+                        for(var _ai=1;_ai<=16;_ai++){ _args.push(_match[_ai] || ''); }
+                        if(_args[13]){
+                            _args[13] = _args[13].replace(/<img\b[^>]*>/gi, function(tag){
+                                var s = (tag.match(/src=["']([^"']*)["']/i)||[,''])[1];
+                                var a = (tag.match(/alt=["']([^"']*)["']/i)||[,''])[1];
+                                return '!['+a+']('+s+')';
+                            }).replace(/<br\s*\/?>/gi, '\n');
+                        }
+                        var _html = fillTemplate(_args);
+                        var _div = document.createElement('div');
+                        _div.innerHTML = _html;
+                        var _phoneEl = _div.firstElementChild || _div.querySelector('.Nico-stage');
+                        if(_phoneEl && node.parentNode){
+                            node.parentNode.replaceChild(_phoneEl, node);
+                            _phoneEl.setAttribute('data-nico-rendered', 'true');
+                            (function(el){ setTimeout(function(){ if(window.initNicoPhone){ window.initNicoPhone(el); } }, 50); })(_phoneEl);
+                        }
+                    }
+                }catch(e){ console.error('[NicoPhone] 处理<手机>元素失败:', e); }
+                return;
+            }
         }
         if(node.nodeType === 1 && node.querySelectorAll){
             var phones = node.querySelectorAll('phone');
@@ -465,6 +504,117 @@ phoneEl.setAttribute('data-nico-rendered', 'true');
             var mesTexts = doc.querySelectorAll('.mes_text');
             for(var i=0;i<mesTexts.length;i++){
                 var el = mesTexts[i];
+                el.removeAttribute('data-nico-rendered');
+                // indexOf多候选定位 + 调试日志
+                (function(rootEl){
+                    var html = rootEl.innerHTML;
+                    if(!html) return;
+                    // 调试：检查是否包含手机相关字符
+                    var _hasPhoneChar = html.indexOf('手机')>=0 || html.indexOf('phone')>=0;
+                    if(!_hasPhoneChar) return;
+                    console.log('[NicoPhone][调试] 发现含手机字符的mes_text, html长度:', html.length);
+                    console.log('[NicoPhone][调试] html前300字:', html.substring(0,300));
+                    // 找起始标签
+                    var _starts = ['<手机','&lt;手机','&#60;手机','&#x3c;手机','<phone','&lt;phone','&#60;phone','&#x3c;phone'];
+                    var _start = -1, _startTag = '';
+                    for(var _si=0;_si<_starts.length;_si++){
+                        var _idx = html.indexOf(_starts[_si]);
+                        if(_idx>=0 && (_start===-1 || _idx<_start)){ _start=_idx; _startTag=_starts[_si]; }
+                    }
+                    console.log('[NicoPhone][调试] 起始标签:', _startTag, '位置:', _start);
+                    if(_start===-1) return;
+                    // 找闭合标签
+                    var _ends = ['</手机>','&lt;/手机&gt;','&#60;/手机&#62;','&#x3c;/手机&#x3e;','</phone>','&lt;/phone&gt;','&#60;/phone&#62;','&#x3c;/phone&#x3e;'];
+                    var _end = -1, _endLen = 0, _endTag = '';
+                    for(var _ei=0;_ei<_ends.length;_ei++){
+                        var _eidx = html.indexOf(_ends[_ei], _start);
+                        if(_eidx>=0 && (_end===-1 || _eidx<_end)){ _end=_eidx; _endLen=_ends[_ei].length; _endTag=_ends[_ei]; }
+                    }
+                    console.log('[NicoPhone][调试] 闭合标签:', _endTag, '位置:', _end, '长度:', _endLen);
+                    if(_end===-1){ console.log('[NicoPhone][调试] 未找到闭合标签，跳过'); return; }
+                    var _raw = html.substring(_start, _end + _endLen);
+                    console.log('[NicoPhone][调试] _raw长度:', _raw.length, '前200字:', _raw.substring(0,200));
+                    // 只反转义手机部分
+                    var _norm = _raw.replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&amp;/g,'&')
+                                    .replace(/&#60;/g,'<').replace(/&#62;/g,'>').replace(/&#38;/g,'&')
+                                    .replace(/&#x3c;/gi,'<').replace(/&#x3e;/gi,'>').replace(/&#x26;/gi,'&');
+                    var _match = _norm.match(PHONE_REGEX) || _norm.match(PHONE_REGEX_CN);
+                    console.log('[NicoPhone][调试] 正则匹配结果:', !!_match);
+                    if(!_match){
+                        console.log('[NicoPhone][调试] 正则匹配失败，_norm前300字:', _norm.substring(0,300));
+                        // 兜底：全局反转义后尝试匹配（旧逻辑方式）
+                        var _fullNorm = html.replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&amp;/g,'&');
+                        var _fullMatch = _fullNorm.match(PHONE_REGEX) || _fullNorm.match(PHONE_REGEX_CN);
+                        console.log('[NicoPhone][调试] 兜底全局反转义匹配结果:', !!_fullMatch);
+                        if(_fullMatch){
+                            console.log('[NicoPhone][调试] 兜底匹配成功，使用旧逻辑替换');
+                            var _fargs = [];
+                            for(var _fai=1;_fai<=16;_fai++){ _fargs.push(_fullMatch[_fai]||''); }
+                            if(_fargs[13]){
+                                _fargs[13] = _fargs[13].replace(/<img\b[^>]*>/gi, function(tag){
+                                    var s=(tag.match(/src=["']([^"']*)["']/i)||[,''])[1];
+                                    var a=(tag.match(/alt=["']([^"']*)["']/i)||[,''])[1];
+                                    return '!['+a+']('+s+')';
+                                }).replace(/<br\s*\/?>/gi,'\n');
+                            }
+                            var _fhtml = fillTemplate(_fargs);
+                            var _fwrap = '<div class="nico-phone-wrap-center" style="display:block;margin:10px auto;clear:both;float:none;text-align:left;">' + _fhtml + '</div>';
+                            var _fused = _fullNorm.match(PHONE_REGEX) ? PHONE_REGEX : PHONE_REGEX_CN;
+                            var _fnew = _fullNorm.replace(_fused, _fwrap);
+                            rootEl.innerHTML = _fnew;
+                            // 重执行script
+                            var _fscripts = rootEl.querySelectorAll('script');
+                            for(var _fsi=0;_fsi<_fscripts.length;_fsi++){
+                                var _fold = _fscripts[_fsi];
+                                var _fnewS = document.createElement('script');
+                                if(_fold.src){ _fnewS.src = _fold.src; }
+                                _fnewS.textContent = _fold.textContent;
+                                if(_fold.parentNode){ _fold.parentNode.replaceChild(_fnewS, _fold); }
+                            }
+                            var _fphone = rootEl.querySelector('.Nico-stage');
+                            if(_fphone){
+                                _fphone.setAttribute('data-nico-rendered','true');
+                                _fphone.style.display='flex'; _fphone.style.justifyContent='center'; _fphone.style.margin='0 auto';
+                                (function(el2){
+                                    var initFn = function(){ if(window.initNicoPhone){ try{window.initNicoPhone(el2);}catch(e){} } else { setTimeout(initFn,200); } };
+                                    if(window.requestAnimationFrame){ requestAnimationFrame(function(){ requestAnimationFrame(initFn); }); } else { setTimeout(initFn,50); }
+                                })(_fphone);
+                            }
+                        }
+                        return;
+                    }
+                    var _args = [];
+                    for(var _ai=1;_ai<=16;_ai++){ _args.push(_match[_ai]||''); }
+                    if(_args[13]){
+                        _args[13] = _args[13].replace(/<img\b[^>]*>/gi, function(tag){
+                            var s=(tag.match(/src=["']([^"']*)["']/i)||[,''])[1];
+                            var a=(tag.match(/alt=["']([^"']*)["']/i)||[,''])[1];
+                            return '!['+a+']('+s+')';
+                        }).replace(/<br\s*\/?>/gi,'\n');
+                    }
+                    var _phoneHtml = fillTemplate(_args);
+                    var _newHtml = html.substring(0,_start) + _phoneHtml + html.substring(_end + _endLen);
+                    rootEl.innerHTML = _newHtml;
+                    var _scripts = rootEl.querySelectorAll('script');
+                    for(var _sci=0;_sci<_scripts.length;_sci++){
+                        var _oldS = _scripts[_sci];
+                        var _newS = document.createElement('script');
+                        if(_oldS.src){ _newS.src = _oldS.src; }
+                        _newS.textContent = _oldS.textContent;
+                        if(_oldS.parentNode){ _oldS.parentNode.replaceChild(_newS, _oldS); }
+                    }
+                    var _phoneEl = rootEl.querySelector('.Nico-stage');
+                    if(_phoneEl){
+                        _phoneEl.setAttribute('data-nico-rendered','true');
+                        _phoneEl.style.display='flex'; _phoneEl.style.justifyContent='center'; _phoneEl.style.margin='0 auto';
+                        (function(el2){
+                            var initFn = function(){ if(window.initNicoPhone){ try{window.initNicoPhone(el2);}catch(e){} } else { setTimeout(initFn,200); } };
+                            if(window.requestAnimationFrame){ requestAnimationFrame(function(){ requestAnimationFrame(initFn); }); } else { setTimeout(initFn,50); }
+                        })(_phoneEl);
+                    }
+                    console.log('[NicoPhone][调试] 手机组件渲染成功');
+                })(el);
+                // 旧逻辑作为兜底：如果新逻辑没渲染成功，旧逻辑继续处理
                 // 已渲染过的检查是否被编辑过（内容中还有phone标签说明被编辑了）
                 if(el.getAttribute('data-nico-rendered')){
                     var rHtml = el.innerHTML;
@@ -504,6 +654,14 @@ phoneEl.setAttribute('data-nico-rendered', 'true');
                     // 包裹居中容器，保留其他文字，手机组件居中显示
                     var wrappedPhone = '<div class="nico-phone-wrap-center" style="display:block;margin:10px auto;clear:both;float:none;text-align:left;">' + phoneHtml + '</div>';
                     var newHtml = normalized.replace(usedRegex, wrappedPhone);
+                    // 清理完整HTML文档的文档级标签（嵌入消息上下文后会显示为文本）
+                    newHtml = newHtml.replace(/<!DOCTYPE[^>]*>/gi, '');
+                    newHtml = newHtml.replace(/<\/?html[^>]*>/gi, '');
+                    newHtml = newHtml.replace(/<\/?head[^>]*>/gi, '');
+                    newHtml = newHtml.replace(/<\/?body[^>]*>/gi, '');
+                    newHtml = newHtml.replace(/<meta[^>]*>/gi, '');
+                    newHtml = newHtml.replace(/<title[^>]*>[\s\S]*?<\/title>/gi, '');
+                    newHtml = newHtml.replace(/<link[^>]*>/gi, '');
                     el.innerHTML = newHtml;
                     // 重新执行同元素内的script标签（innerHTML插入的script不会自动执行，会导致其他状态栏交互失效）
                     var _scripts = el.querySelectorAll('script');
