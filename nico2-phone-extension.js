@@ -418,11 +418,6 @@
         return count;
     }
     // 扫描主document + 所有iframe
-    var _nicoScanTimer = null;
-    function debouncedScanAllDocs(){
-        if(_nicoScanTimer) clearTimeout(_nicoScanTimer);
-        _nicoScanTimer = setTimeout(function(){ _nicoScanTimer = null; scanAllDocs(); }, 250);
-    }
     function scanAllDocs(){
         var total = 0;
         try{ total += initNicoPhonesInDoc(document); }catch(e){}
@@ -436,7 +431,7 @@
                     if(!iframes[i]._nicoObserved){
                         iframes[i]._nicoObserved = true;
                         try{
-                            var obs = new MutationObserver(function(){ debouncedScanAllDocs(); });
+                            var obs = new MutationObserver(function(){ initNicoPhonesInDoc(iframeDoc); });
                             obs.observe(iframeDoc.body, { childList:true, subtree:true });
                         }catch(e){}
                     }
@@ -489,7 +484,7 @@
             containers.forEach(function(c){
                 if(!c._nicoObserved){
                     c._nicoObserved = true;
-                    var obs = new MutationObserver(function(){ debouncedScanAllDocs(); });
+                    var obs = new MutationObserver(function(){ scanAllDocs(); });
                     obs.observe(c, { childList:true, subtree:true, characterData:true });
                 }
             });
@@ -514,13 +509,6 @@
                 (function(rootEl){
                     var html = rootEl.innerHTML;
                     if(!html) return;
-                    // 已渲染且无原始标签则跳过，避免频繁重渲染导致交互失效
-                    if(html.indexOf('Nico-stage') >= 0 &&
-                       html.indexOf('<手机') < 0 && html.indexOf('<phone') < 0 &&
-                       html.indexOf('&lt;手机') < 0 && html.indexOf('&lt;phone') < 0 &&
-                       html.indexOf('&#60;手机') < 0 && html.indexOf('&#60;phone') < 0){
-                        return;
-                    }
                     // 调试：检查是否包含手机相关字符
                     var _hasPhoneChar = html.indexOf('手机')>=0 || html.indexOf('phone')>=0;
                     if(!_hasPhoneChar) return;
