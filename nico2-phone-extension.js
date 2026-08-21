@@ -502,33 +502,17 @@ phoneEl.setAttribute('data-nico-rendered', 'true');
                     }
                     var phoneHtml = fillTemplate(args);
                     // 包裹居中容器，保留其他文字，手机组件居中显示
-                    var wrappedPhone = '<div class="nico-phone-wrap-center" style="display:block;text-align:center;margin:10px auto;clear:both;float:none;">' + phoneHtml + '</div>';
+                    var wrappedPhone = '<div class="nico-phone-wrap-center" style="display:block;margin:10px auto;clear:both;float:none;text-align:left;">' + phoneHtml + '</div>';
                     var newHtml = normalized.replace(usedRegex, wrappedPhone);
+                    // 精确清理：仅移除手机组件闭合div后紧跟的情侣相册残留（锚定</div>，不扫描全文，无误删风险）
+                    newHtml = newHtml.replace(/(<\/div>)\s*(?:\r?\n)?\[(?:图文上传|相册上传):[^\n]*(?:\r?\n)?<\/情侣相册>\s*(?:<\/手机>)?/, '$1');
+                    newHtml = newHtml.replace(/(<\/div>)\s*(?:\r?\n)?\[(?:图文上传|相册上传):[^\n]*(?:\r?\n)?<\/cpAlbum>\s*(?:<\/phone>)?/i, '$1');
                     el.innerHTML = newHtml;
                     el.setAttribute('data-nico-rendered', 'true');
                     var phoneEl = el.querySelector('.Nico-stage');
                     if(phoneEl){
                         // 设置 .Nico-stage 的 data-nico-rendered，防止 MutationObserver 重复初始化
                         phoneEl.setAttribute('data-nico-rendered', 'true');
-                        // 清理手机组件后残留的情侣相册文本（正则最后一个标签非贪婪匹配未消费的内容）
-                        var _next = phoneEl.nextSibling;
-                        while(_next){
-                            var _remove = false;
-                            if(_next.nodeType === 3){
-                                var _t = _next.textContent;
-                                var _trimmed = _t.trim();
-                                if(_trimmed === ''){ _remove = true; }
-                                else if(_t.indexOf('[图文上传:') >= 0 || _t.indexOf('[照片:') >= 0 || _t.indexOf('[相册上传:') >= 0 || _t.indexOf('[图文:') >= 0 || _t.indexOf('</情侣相册>') >= 0 || _t.indexOf('</手机>') >= 0 || _t.indexOf('</cpAlbum>') >= 0 || _t.indexOf('</phone>') >= 0){ _remove = true; }
-                                else { break; }
-                            } else if(_next.nodeType === 1){
-                                var _tag = _next.tagName.toLowerCase();
-                                if(_tag === '情侣相册' || _tag === 'cpalbum' || _tag === '手机' || _tag === 'phone'){ _remove = true; }
-                                else { break; }
-                            } else { break; }
-                            var _nextNext = _next.nextSibling;
-                            if(_remove && _next.parentNode){ _next.parentNode.removeChild(_next); }
-                            _next = _nextNext;
-                        }
                         // 确保手机组件居中
                         phoneEl.style.display = 'flex';
                         phoneEl.style.justifyContent = 'center';
